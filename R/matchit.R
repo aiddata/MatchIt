@@ -107,6 +107,6 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
   dimnames(nn) <- list(c("All","Matched","Unmatched","Discarded"),
                        c("Control","Treated"))
   out2$nn <- nn
-  
+  print(out2)
   return(out2)
 }
