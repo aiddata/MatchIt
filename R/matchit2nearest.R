@@ -5,6 +5,16 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
                              subclass=NULL, verbose=FALSE, sub.by=NULL,
                              is.full.mahalanobis,...){  
 
+
+  if(class(distance) == "list")
+  {
+    #Exceptions for when spatial information is passed to matching functions.
+    spatial.thresholds <- distance[[4]]
+    spatial.decay.model <- distance[[3]]
+    spatial.data <- distance[[2]]
+    distance <- distance[[1]]
+  }
+  
  if(verbose)
     cat("Nearest neighbor matching... \n")
 
@@ -130,7 +140,9 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     cat("Matching Treated: ")
   }
   
+  
   for(i in 1:tr){
+
     ## Make new matched column to be used for exact matching
     ## Will only be 0 (eligible for matching) if it's an exact match
     if(verbose) {if(i%in%trseq){cat(10*which(trseq==i),"%...",sep="")}}  # a counter
@@ -159,11 +171,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     ## The treatment unit for this iteration, again resolving ties randomly
     itert <- as.vector(na.omit(tlabels[iterd1==d1 & matchedt==0]))
     if(length(itert)>1){itert <- sample(itert,1)}
-    
 
-    #Placeholder - Spatial Adjustments for a distance-decay penalty could
-    #be inserted here.
-    
     
     ## Calculating all the absolute deviations in propensity scores
     ## Calculate only for those eligible to be matched (matchedc==0)
@@ -177,6 +185,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     ## Make matchedc2==-2 if it isn't an exact match
     ## There might be a more efficient way to do this, but I couldn't figure
     ## out another way to compare a vector with the matrix
+
     if (!is.null(exact)) {
       for (k in 1:dim(exact)[2]) matchedc2[exact[itert,k]!=exact[clabels,k]] <- -2
     }
@@ -196,6 +205,17 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         mindev <- NA
       }
       else deviation <- abs(d0[matchedc2==0]-iterd1)
+    }
+    
+    #Spatial penalties are applied to the deviations calculated here.
+    #This should be through a function which draws in the spatial data.
+    #The current trick is identifying the relevant data for the current iteration,
+    #but that should be doable based on the d0 and d1 row titles.
+    if(!is.null(spatial.thresholds))
+    {
+      print(spatial.thresholds)
+      print(spatial.decay.model)
+      #spatial.data
     }
     
     if (caliper!=0 & (!is.null(deviation))) {

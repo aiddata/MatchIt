@@ -133,8 +133,14 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
   } else {is.full.mahalanobis <- FALSE}
 
   
-  #Test adding additional rows to distance...
-  print(distance)
+  #New code here - if there is a spatial object, then distance is a list
+  #That contains the spatial data frame, decay model, thresholds, and PSM distances.
+  #Otherwise, it's only a vector.  
+  if(!is.null(spatial.thresholds))
+  {
+    t_dist = distance
+    distance=list(t_dist, spatial_data, spatial.decay.model, spatial.thresholds)
+  }
   
   ## matching!
   out2 <- do.call(fn2, list(treat, X, data, distance=distance, discarded,
