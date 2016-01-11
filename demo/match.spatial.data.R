@@ -22,4 +22,4 @@ m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
 
 spatial_opts <- list(spatial.decay.model="morans",  ignore.spatial=FALSE, spatial.thresholds=c(.01,.05))
 m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
-                  method = "nearest", distance = "mahalanobis", distance.options=spatial_opts)
+                  method = "nearest", distance = "logit", distance.options=spatial_opts)

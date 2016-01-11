@@ -9,7 +9,11 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
   {
     distance.options$ignore.spatial <- FALSE
   }
-  print(distance.options)
+  else if (distance.options$ignore.spatial == TRUE)
+  {
+    data <- data@data
+    warning("Spatial attributes and options are being ignored, as ignore.spatial is set to TRUE.")
+  }
   if("data" %in% slotNames(data) && "coords" %in% slotNames(data) && distance.options$ignore.spatial == FALSE)
   {
     spatial_data <- data
@@ -27,6 +31,16 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
       #Check that the user-supplied thresholds make sense in terms of units of measurement.
       print("Placeholder for checks.")
     }
+    #Everything is set correctly and spatial options should be enabled.
+    #Remove the old spatial argument pass so as to not pass to existing functions.
+    #and save the spatial arguments into new variables for passing into the distance-decay
+    #function.
+    spatial.thresholds = distance.options$spatial.thresholds
+    spatial.decay.model = distance.options$spatial.decay.model
+    
+    distance.options$spatial.thresholds <- NULL
+    distance.options$spatial.decay.model <- NULL
+    distance.options$ignore.spatial <- NULL
     
   }
   #Not a spatial dataframe - check to make sure the user doesn't think they're using
@@ -35,16 +49,13 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
   {
     if (!is.null(distance.options$spatial.decay.model) || !is.null(distance.options$spatial.thresholds))
     {
-      if(distance.options$ignore.spatial == TRUE)
-      {
-        spatial_data <- data
-        warning("Spatial attributes and options are being ignored, as ignore.spatial is set to TRUE.")
-      }
-      else
-      {
-        stop("To use spatial options you must provide a spatial dataframe object.")
-      }
+    stop("To use spatial options you must provide a spatial dataframe object.")
     }
+    #Everything indicates the spatial options should be removed, and 
+    #Matchit proceeds as usual ignoring all spatial functionality.
+    rm(distance.options$spatial.thresholds)
+    rm(distance.options$spatial.decay.model)
+    rm(distance.options$ignore.spatial)
   }
   
   #data input
@@ -121,6 +132,10 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
     is.full.mahalanobis <- TRUE
   } else {is.full.mahalanobis <- FALSE}
 
+  
+  #Test adding additional rows to distance...
+  print(distance)
+  
   ## matching!
   out2 <- do.call(fn2, list(treat, X, data, distance=distance, discarded,
                             is.full.mahalanobis=is.full.mahalanobis, ...)) 
