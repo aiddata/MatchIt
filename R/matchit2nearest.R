@@ -102,9 +102,10 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
       X <- cbind(X,mahvars[!ww])
     }
     mahvars <- as.matrix(mahvars)
+
     }
   }
-  
+
   ## Now for exact matching within nearest neighbor
   ## exact should not equal T for this type of matching--that would get sent to matchit2exact
   if (!is.null(exact)){
@@ -130,7 +131,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   }
   
   for(i in 1:tr){
-    ## Make new matchedc column to be used for exact matching
+    ## Make new matched column to be used for exact matching
     ## Will only be 0 (eligible for matching) if it's an exact match
     if(verbose) {if(i%in%trseq){cat(10*which(trseq==i),"%...",sep="")}}  # a counter
     matchedc2 <- matchedc
@@ -158,6 +159,11 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     ## The treatment unit for this iteration, again resolving ties randomly
     itert <- as.vector(na.omit(tlabels[iterd1==d1 & matchedt==0]))
     if(length(itert)>1){itert <- sample(itert,1)}
+    
+
+    #Placeholder - Spatial Adjustments for a distance-decay penalty could
+    #be inserted here.
+    
     
     ## Calculating all the absolute deviations in propensity scores
     ## Calculate only for those eligible to be matched (matchedc==0)

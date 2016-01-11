@@ -3,6 +3,50 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
                     reestimate = FALSE, ...) { 
 
   #Checking input format
+  
+  #Spatial input format checks
+  if (is.null(distance.options$ignore.spatial))
+  {
+    distance.options$ignore.spatial <- FALSE
+  }
+  print(distance.options)
+  if("data" %in% slotNames(data) && "coords" %in% slotNames(data) && distance.options$ignore.spatial == FALSE)
+  {
+    spatial_data <- data
+    data <- spatial_data@data
+    if (is.null(distance.options$spatial.decay.model))
+      {
+        distance.options$spatial.decay.model <- "morans"
+      }
+    if(is.null(distance.options$spatial.thresholds))
+    {
+      print("Auto-calculating spatial thresholds... placeholder.")
+    }
+    else
+    {
+      #Check that the user-supplied thresholds make sense in terms of units of measurement.
+      print("Placeholder for checks.")
+    }
+    
+  }
+  #Not a spatial dataframe - check to make sure the user doesn't think they're using
+  #spatial functions.
+  else
+  {
+    if (!is.null(distance.options$spatial.decay.model) || !is.null(distance.options$spatial.thresholds))
+    {
+      if(distance.options$ignore.spatial == TRUE)
+      {
+        spatial_data <- data
+        warning("Spatial attributes and options are being ignored, as ignore.spatial is set to TRUE.")
+      }
+      else
+      {
+        stop("To use spatial options you must provide a spatial dataframe object.")
+      }
+    }
+  }
+  
   #data input
   mcall <- match.call()
   if(is.null(data)) stop("Dataframe must be specified",call.=FALSE)
@@ -71,7 +115,7 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
     }
     distance <- out1$distance
   }
-
+  
   ## full mahalanobis matching
   if(fn1=="distance2mahalanobis"){
     is.full.mahalanobis <- TRUE
@@ -107,6 +151,5 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
   dimnames(nn) <- list(c("All","Matched","Unmatched","Discarded"),
                        c("Control","Treated"))
   out2$nn <- nn
-  print(out2)
   return(out2)
 }
