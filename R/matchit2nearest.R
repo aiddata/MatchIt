@@ -215,7 +215,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     {
       print(spatial.thresholds)
       print(spatial.decay.model)
-      #spatial.data
+      #spatial.data - pass for coords.  Can optionally only pass coords?
     }
     
     if (caliper!=0 & (!is.null(deviation))) {
