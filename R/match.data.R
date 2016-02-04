@@ -13,7 +13,15 @@ match.data <- function(object, group = "all", distance = "distance",
   if (distance %in% vars)
     stop("invalid input for distance. choose a different name.")
   else if (!is.null(object$distance)) {
-    dta <- data.frame(cbind(data, object$distance))
+    if(class(data) != "data.frame")
+    {
+      dta <- data.frame(cbind(data@data, object$distance))
+    }
+    else
+    {
+      dta <- data.frame(cbind(data, object$distance))
+    }
+    
     names(dta) <- c(names(data), distance)
     data <- dta
   }
