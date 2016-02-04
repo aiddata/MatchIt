@@ -105,7 +105,6 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   sd.cal <- caliper*sqrt(var(distance[in.sample==1]))
   }
   
-  
   ## Var-covar matrix for Mahalanobis (currently set for full sample)
   if (!is.null(mahvars) & !is.full.mahalanobis) {
     if(!sum(mahvars%in%names(data))==length(mahvars)) {
@@ -224,13 +223,13 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
       deviation <- spatial.effects.pscore.itert(spatial.thresholds, spatial.decay.model,spatial.data,deviation,itert)
     }
 
-
     if (caliper!=0 & (!is.null(deviation))) {
       if(replace & r!=1)
         pool <- clabels[!clabels%in%match.matrix[itert,(1:r-1)]
                         & matchedc2==0][deviation <= sd.cal]
       else
         pool <- clabels[matchedc2==0][deviation <= sd.cal]
+      pool <- pool[!is.na(pool)]
       if(length(pool)==0) { 
         if (calclosest==FALSE) mindev <- NA
         else { 
@@ -254,7 +253,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         mindev <- clabels[!clabels%in%match.matrix[itert,(1:r-1)] & matchedc2==0][min(deviation)==deviation]
       } else {mindev <- clabels[matchedc2==0][min(deviation)==deviation]}
     }
-    
+
     ## Resolving ties in minimum deviation by random draw
     if(length(mindev)>1){goodmatch <- sample(mindev,1)} else goodmatch <- mindev
     
@@ -280,6 +279,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   res <- list(match.matrix = match.matrix, weights =
               weights.matrix(match.matrix, treat, discarded), X=X)
 
+
   ## Subclassifying
   if(!is.null(subclass)){
     if(is.null(sub.by)) sub.by="treat"
@@ -293,5 +293,6 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   } else{
     class(res) <- "matchit"
   }
+
   return(res)
 }

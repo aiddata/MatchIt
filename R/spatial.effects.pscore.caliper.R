@@ -35,7 +35,6 @@ spatial.effects.pscore.caliper <- function(spatial.thresholds, spatial.decay.mod
   #calculate the weighted P-scores
   W_P <- W * psm_dev_matrix
   
-
-  caliper_cut <- caliper * sqrt(var(as.vector(W_P)))
+  caliper_cut <- caliper * sqrt(var(as.vector(W_P), na.rm=TRUE))
   return(caliper_cut)
 }

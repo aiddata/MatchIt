@@ -52,9 +52,9 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
     }
     #Everything indicates the spatial options should be removed, and 
     #Matchit proceeds as usual ignoring all spatial functionality.
-    if(('spatial.thresholds' %in% names(distance.options))){distance.options = distance.options[distance.options != "spatial.thresholds"]}
-    if(('spatial.decay.model' %in% names(distance.options))){distance.options = distance.options[distance.options != "spatial.decay.model"]}
-    if(('ignore.spatial' %in% names(distance.options))){distance.options = distance.options[distance.options != "ignore.spatial"]}
+    if(('spatial.thresholds' %in% names(distance.options))){distance.options["spatial thresholds"] <- NULL}
+    if(('spatial.decay.model' %in% names(distance.options))){distance.options["spatial.decay.model"] <- NULL}
+    if(('ignore.spatial' %in% names(distance.options))){distance.options["ignore.spatial"]<- NULL}
   }
   
   #data input
@@ -144,6 +144,12 @@ matchit <- function(formula, data, method = "nearest", distance = "logit",
   ## matching!
   out2 <- do.call(fn2, list(treat, X, data, distance=distance, discarded,
                             is.full.mahalanobis=is.full.mahalanobis, caliper = caliper, ...)) 
+  if(class(distance) == "list")
+  {
+    #For the summary function, we need to redefine distance as only
+    #the input PSM distances
+    distance = distance[[1]]
+  }
 
   ## no distance for full mahalanobis matching
   if(fn1=="distance2mahalanobis"){

@@ -5,7 +5,7 @@ spatial.effects.distance.decay <- function(thresh, model, dist)
 {
   if(model=="threshold")
   {
-    thresh_function <- function(x){if(x<thresh){0*x}else{1*x}}
+    thresh_function <- function(x){if(x<thresh){NA}else{1*x}}
     if(class(dist) == "matrix")
     {
     weights <- apply(dist,MARGIN=c(1,2),FUN=thresh_function)
