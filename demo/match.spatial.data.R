@@ -1,7 +1,8 @@
 library(devtools)
 library(sp)
-detach("package:MatchIt", unload=TRUE)
-load_all("/home/aid_data/Desktop/GitRepo/MatchIt/R")
+#detach("package:MatchIt", unload=TRUE)
+#load_all("/home/aid_data/Desktop/GitRepo/MatchIt/R")
+install_github("itpir/matchit")
 library(MatchIt)
 
 ###
@@ -21,6 +22,6 @@ spdf_LL <- SpatialPointsDataFrame(coords, lalonde)
 m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data = lalonde,
                   method = "nearest", distance = "logit", caliper=.25)
 
-spatial_opts <- list(spatial.decay.model="threshold",  ignore.spatial=FALSE, spatial.thresholds=c(.05))
+spatial_opts <- list(spatial.decay.model="threshold", spatial.thresholds=c(.05))
 m.out2 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
                   method = "nearest", distance = "logit", distance.options=spatial_opts, caliper=0.25)
