@@ -1,4 +1,5 @@
-import(MASS)
+import(MASS,
+       sp)
 export(matchit,	
        help.matchit,
        match.data, 

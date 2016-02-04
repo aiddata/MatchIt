@@ -17,9 +17,9 @@ coords = cbind(runif(614,37.1708,37.3708), runif(614,76.6069,76.8069))
 spdf_LL <- SpatialPointsDataFrame(coords, lalonde)
 
 ## perform nearest neighbor matching
-m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
-                  method = "nearest", distance = "mahalanobis")
+m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data = lalonde,
+                  method = "nearest", distance = "mahalanobis", caliper=.25)
 
-spatial_opts <- list(spatial.decay.model="morans",  ignore.spatial=FALSE, spatial.thresholds=c(.01,.05))
-m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
-                  method = "nearest", distance = "logit", distance.options=spatial_opts)
+spatial_opts <- list(spatial.decay.model="threshold",  ignore.spatial=FALSE, spatial.thresholds=c(.15))
+m.out2 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
+                  method = "nearest", distance = "logit", distance.options=spatial_opts, caliper=0.25)

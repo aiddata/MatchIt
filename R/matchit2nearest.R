@@ -96,7 +96,15 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   r <- 1
   
   ## Caliper for matching (=0 if caliper matching not done)
+  if(exists("spatial.thresholds") & !is.null(distance) & caliper != 0)
+  {
+  sd.cal = spatial.effects.pscore.caliper(spatial.thresholds, spatial.decay.model, spatial.data, distance, caliper, treat)
+  }
+  else
+  {
   sd.cal <- caliper*sqrt(var(distance[in.sample==1]))
+  }
+  
   
   ## Var-covar matrix for Mahalanobis (currently set for full sample)
   if (!is.null(mahvars) & !is.full.mahalanobis) {
@@ -211,13 +219,12 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     #This should be through a function which draws in the spatial data.
     #The current trick is identifying the relevant data for the current iteration,
     #but that should be doable based on the d0 and d1 row titles.
-    if(!is.null(spatial.thresholds))
+    if(exists("spatial.thresholds") & !is.null(deviation))
     {
-      print(spatial.thresholds)
-      print(spatial.decay.model)
-      #spatial.data - pass for coords.  Can optionally only pass coords?
+      deviation <- spatial.effects.pscore.itert(spatial.thresholds, spatial.decay.model,spatial.data,deviation,itert)
     }
-    
+
+
     if (caliper!=0 & (!is.null(deviation))) {
       if(replace & r!=1)
         pool <- clabels[!clabels%in%match.matrix[itert,(1:r-1)]
