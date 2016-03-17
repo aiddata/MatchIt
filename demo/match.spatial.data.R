@@ -1,5 +1,6 @@
 library(devtools)
 library(sp)
+
 detach("package:MatchIt", unload=TRUE)
 load_all("/home/aid_data/Desktop/GitRepo/MatchIt/R")
 #library(devtools)
@@ -24,9 +25,11 @@ m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data = lalonde,
                   method = "nearest", distance = "logit", caliper=.25)
 
 ##Matching accounting for spatial spillover and autocorrelation
-spatial_opts <- list(spatial.decay.model="GausSemiVar", spatial.thresholds=c(.05))
+spatial_opts <- list(spatial.decay.model="GausSemiVar",
+                     spatial.thresholds=c(.05))
 m.out2 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
-                  method = "nearest", distance = "logit", distance.options=spatial_opts, caliper=0.25)
+                  method = "nearest", distance = "logit",
+                  spatial.options=spatial_opts, caliper=0.25)
 
 #Next things to work on:
 #In spatial case, return a spatial data frame rather than a standard data.frame
