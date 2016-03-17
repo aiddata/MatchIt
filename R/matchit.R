@@ -146,9 +146,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   }
 
 
-  # If there is a spatial object, then distance is a list
-  # That contains the spatial data frame, decay model, thresholds, and PSM
-  # distances.
+  # If there is a spatial object, then distance is a list that contains
+  # the spatial data frame, decay model, thresholds, and PSM distances.
   # Otherwise, it's only a vector.
   if (is.spatial == TRUE) {
     t_dist = distance
