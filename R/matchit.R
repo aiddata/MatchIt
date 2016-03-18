@@ -88,6 +88,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   }
   if (is.numeric(distance)) {
     fn1 <- "distance2user"
+    stop(distance, "not supported.")
+
   }
   fn2 <- paste("matchit2", method, sep="")
   if (!exists(fn2)) {
@@ -115,9 +117,11 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     if (!is.null(distance)) {
       warning("distance is set to `NULL' when exact matching is used.")
     }
+
   } else if (is.numeric(distance)){
     out1 <- NULL
     discarded <- discard(treat, distance, discard, X)
+
   } else {
     if (is.null(distance.options$formula)) {
       distance.options$formula <- formula

@@ -1,7 +1,7 @@
 matchit2nearest <-  function(treat, X, data, distance, discarded,
-                             ratio=1, replace = FALSE, m.order = "largest",
-                             caliper = 0, calclosest = FALSE,
-                             mahvars = NULL, exact = NULL,
+                             ratio=1, replace=FALSE, m.order="largest",
+                             caliper=0, calclosest=FALSE,
+                             mahvars=NULL, exact=NULL,
                              subclass=NULL, verbose=FALSE, sub.by=NULL,
                              is.full.mahalanobis,...){
 
@@ -20,38 +20,38 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # replace
   if (!(identical(replace, TRUE) | identical(replace, FALSE))) {
     warning("replace=", replace, " is invalid; used replace=FALSE instead", call.=FALSE)
-    replace=FALSE
+    replace = FALSE
   }
   # m.order
   if (!(identical(m.order,"largest") | identical(m.order,"smallest") |
        identical(m.order,"random"))) {
     warning("m.order=", m.order, " is invalid; used m.order='largest' instead", call.=FALSE)
-    m.order="largest"
+    m.order = "largest"
   }
   # ratio
   ratio <- round(ratio)
   if (!is.numeric(ratio) | ratio[1] < 1 | !identical(round(length(ratio)), 1)) {
     warning("ratio=", ratio, " is invalid; used ratio=1 instead", call.=FALSE)
-    ratio=1
+    ratio = 1
   }
   # caliper
   if (!is.vector(caliper) | !identical(round(length(caliper)), 1)) {
     warning("caliper=", caliper, " is invalid; Caliper matching not done", call.=FALSE)
-    caliper=0
+    caliper = 0
   }
   if (caliper < 0) {
     warning("caliper=", caliper, " is less than 0; Caliper matching not done", call.=FALSE)
-    caliper=0
+    caliper = 0
   }
   # calclosest
-  if (!(identical(calclosest,TRUE)| identical(calclosest,FALSE))) {
+  if (!(identical(calclosest, TRUE)| identical(calclosest, FALSE))) {
     warning("calclosest=", calclosest, " is invalid; used calclosest=FALSE instead", call.=FALSE)
-    calclosest=FALSE
+    calclosest = FALSE
   }
   # mahvars & caliper
   if (!is.null(mahvars) & caliper[1] == 0) {
-    warning("No caliper size specified for Mahalanobis matching.  Caliper=.25 used.", call. = FALSE)
-    caliper=.25
+    warning("No caliper size specified for Mahalanobis matching.  Caliper=.25 used.", call.=FALSE)
+    caliper = .25
   }
  #when mahalanobis distance is used for all covars
  if (is.full.mahalanobis) {
@@ -61,7 +61,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
    caliper <- .25
    ## no subclass with full mahalanobis
    if (!is.null(subclass)) {
-     warning("No subclassification with pure Mahalanobis distance.", call. = FALSE)
+     warning("No subclassification with pure Mahalanobis distance.", call.=FALSE)
      subclass <- NULL
    }
  }
@@ -83,7 +83,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   names(in.sample) <- labels
 
   ## 10/1/07: Warning for if fewer control than ratio*treated and matching without replacement
-  if (n0 < ratio*n1 & replace==FALSE) {
+  if (n0 < ratio * n1 & replace == FALSE) {
   	if (ratio > 1) {
       warning(paste("Not enough control units for ", ratio, " matches for each
                     treated unit when matching without replacement.  Not all
@@ -102,7 +102,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   ## Vectors of whether unit has been matched:
   ## = 0 if not matched (unit # of match if matched)
   ## = -1 if can't be matched (if in.sample=0)
-  matchedc <- rep(0,length(d0))
+  matchedc <- rep(0, length(d0))
   names(matchedc) <- clabels
 
   ## These are the units that are ineligible because of discard
@@ -118,11 +118,11 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
   ## Caliper for matching (=0 if caliper matching not done)
   if (exists("spatial.thresholds") & !is.null(distance) & caliper != 0) {
-    sd.cal = spatial.effects.pscore.caliper(spatial.thresholds,
+    sd.cal <- spatial.effects.pscore.caliper(spatial.thresholds,
                                             spatial.decay.model, spatial.data,
                                             distance, caliper, treat)
   } else {
-    sd.cal <- caliper*sqrt(var(distance[in.sample == 1]))
+    sd.cal <- caliper * sqrt(var(distance[in.sample == 1]))
   }
 
   ## Var-covar matrix for Mahalanobis (currently set for full sample)
@@ -241,7 +241,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         deviation <- NULL
         mindev <- NA
       } else {
-        deviation <- abs(d0[!clabels %in% match.matrix[itert,(1:r-1)] & matchedc2==0]-iterd1)
+        deviation <- abs(d0[!clabels %in% match.matrix[itert,(1:r-1)] & matchedc2 == 0] - iterd1)
       }
     }
     else {
@@ -261,25 +261,25 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
       deviation <- spatial.effects.pscore.itert(spatial.thresholds, spatial.decay.model,spatial.data,deviation,itert)
     }
 
-    if (caliper!=0 & (!is.null(deviation))) {
-      if (replace & r!=1) {
-        pool <- clabels[!clabels%in%match.matrix[itert,(1:r-1)]
-                        & matchedc2==0][deviation <= sd.cal]
+    if (caliper != 0 & (!is.null(deviation))) {
+      if (replace & r != 1) {
+        pool <- clabels[!clabels %in% match.matrix[itert,(1:r-1)]
+                        & matchedc2 == 0][deviation <= sd.cal]
       } else {
-        pool <- clabels[matchedc2==0][deviation <= sd.cal]
+        pool <- clabels[matchedc2 == 0][deviation <= sd.cal]
       }
       pool <- pool[!is.na(pool)]
-      if (length(pool)==0) {
-        if (calclosest==FALSE) {
+      if (length(pool) == 0) {
+        if (calclosest == FALSE) {
           mindev <- NA
         } else {
-          if (replace & r!= 1) {
-            mindev <- clabels[!clabels%in%match.matrix[itert,(1:r-1)]][min(deviation)==deviation]
+          if (replace & r != 1) {
+            mindev <- clabels[!clabels %in% match.matrix[itert,(1:r-1)]][min(deviation) == deviation]
           } else {
-            mindev <- clabels[matchedc2==0][min(deviation) == deviation]
+            mindev <- clabels[matchedc2 == 0][min(deviation) == deviation]
           }
         }
-      } else if (length(pool)==1) {
+      } else if (length(pool) == 1) {
         mindev <- pool[1]
       } else if (is.null(mahvars)) {
         mindev <- sample(pool, 1)
@@ -291,7 +291,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         mindev <- pool[mahal == min(mahal)]
       }
     } else if (!is.null(deviation)) {
-      if (replace & r!=1) {
+      if (replace & r != 1) {
         mindev <- clabels[!clabels %in% match.matrix[itert, (1:r-1)] & matchedc2 == 0][min(deviation) == deviation]
       } else {
         mindev <- clabels[matchedc2 == 0][min(deviation) == deviation]
@@ -327,15 +327,15 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   x[x == -1] <- NA
 
   ## Calculate weights and return the results
-  res <- list(match.matrix=match.matrix,
-              weights=weights.matrix(match.matrix, treat, discarded),
-              X=X)
+  res <- list(match.matrix = match.matrix,
+              weights = weights.matrix(match.matrix, treat, discarded),
+              X = X)
 
 
   ## Subclassifying
   if (!is.null(subclass)) {
     if (is.null(sub.by)) {
-      sub.by="treat"
+      sub.by = "treat"
     }
     psres <- matchit2subclass(treat,X,data,distance,discarded,
                               match.matrix=match.matrix,
