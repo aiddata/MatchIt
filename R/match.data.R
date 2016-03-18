@@ -6,45 +6,47 @@ match.data <- function(object, group = "all", distance = "distance",
   } else {
     env <- parent.frame()
   }
+
   data <- eval(object$call$data, envir = env)
   treat <- object$treat
   wt <- object$weights
   vars <- names(data)
-  if (distance %in% vars)
+
+  if (distance %in% vars) {
     stop("invalid input for distance. choose a different name.")
-  else if (!is.null(object$distance)) {
-    if(class(data) != "data.frame")
-    {
+  } else if (!is.null(object$distance)) {
+    if (check.is.spatial(data) == TRUE) {
       dta <- data.frame(cbind(data@data, object$distance))
-    }
-    else
-    {
+    } else {
       dta <- data.frame(cbind(data, object$distance))
     }
-    
     names(dta) <- c(names(data), distance)
     data <- dta
   }
-  if (weights %in% vars)
+
+  if (weights %in% vars) {
     stop("invalid input for weights. choose a different name.")
-  else if (!is.null(object$weights)){
+  } else if (!is.null(object$weights)) {
     dta <- data.frame(cbind(data, object$weights))
     names(dta) <- c(names(data), weights)
     data <- dta
   }
-  if (subclass %in% vars)
+
+  if (subclass %in% vars) {
     stop("invalid input for subclass. choose a different name.")
-  else if (!is.null(object$subclass)){
+  } else if (!is.null(object$subclass)){
     dta <- data.frame(cbind(data, object$subclass))
     names(dta) <- c(names(data), subclass)
     data <- dta
   }
-  if (group == "all")
+
+  if (group == "all") {
     return(data[wt > 0,])
-  else if (group == "treat")
+  } else if (group == "treat") {
     return(data[wt > 0 & treat == 1,])
-  else if (group == "control")
+  } else if (group == "control") {
     return(data[wt > 0 & treat == 0,])
-  else
+  } else {
     stop("error: invalid input for group.")
+  }
 }

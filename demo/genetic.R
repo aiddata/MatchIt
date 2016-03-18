@@ -6,7 +6,7 @@
 data(lalonde)
 
 ## using logistic propensity score as one of the covariates
-m.out <- matchit(treat ~ age + educ + black + hispan + married + nodegree + re74 + re75, data = lalonde, method = "genetic", distance = "logit")
+m.out <- matchit(treat ~ age + educ + black + hisp + married + nodegr + re74 + re75, data = lalonde, method = "genetic", distance = "logit")
 user.prompt()
 
 ## printing a short summary

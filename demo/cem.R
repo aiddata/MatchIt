@@ -6,7 +6,7 @@
 data(lalonde)
 
 ## coarsened exact matching with automatic coarsening
-m.out <- matchit(treat ~ age + educ + black + hispan + married + nodegree 
+m.out <- matchit(treat ~ age + educ + black + hisp + married + nodegr 
                  + re74 + re75, data = lalonde, method = "cem")
 user.prompt()
 
@@ -31,7 +31,7 @@ agecut <- hist(lalonde$age, br=seq(15,55, length=14),plot=FALSE)$breaks
 mycp <- list(re75=re75cut, re74=re74cut, age=agecut)
 
 ## coarsened exact matching with user-given cutpoints
-m.out2 <- matchit(treat ~ age + educ + black + hispan + married + nodegree 
+m.out2 <- matchit(treat ~ age + educ + black + hisp + married + nodegr 
                   + re74 + re75, data = lalonde, method = "cem",
                   cutpoints = mycp)
 user.prompt()

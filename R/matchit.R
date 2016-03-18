@@ -1,10 +1,11 @@
 matchit <- function(formula, data, method="nearest", distance="logit",
                     distance.options=list(), spatial.options=list(),
-                    discard="none", caliper=0, reestimate=FALSE, ...) {
+                    discard="none", reestimate=FALSE, ...) {
 
-  # Spatial input format checks
-  is.spatial <- FALSE
-  if ("data" %in% slotNames(data) && "coords" %in% slotNames(data) {
+  # spatial input format checks
+  spatial.options$is.spatial <- check.is.spatial(data)
+
+  if (spatial.options$is.spatial) {
 
     if ('ignore.spatial' %in% names(spatial.options) &&
         spatial.options$ignore.spatial == TRUE) {
@@ -14,21 +15,35 @@ matchit <- function(formula, data, method="nearest", distance="logit",
               ignore.spatial is set to TRUE.")
 
     } else {
-      is.spatial <- TRUE
+      spatial.options$is.spatial <- TRUE
     }
+  } else {
+
+    # Not a spatial dataframe - check to make sure the user doesn't think
+    # they're using spatial functions.
+    if (('thresholds' %in% names(spatial.options)) ||
+        ('decay.model' %in% names(spatial.options)) ||
+        ('caliper' %in% names(spatial.options)) ||
+        ('ignore.spatial' %in% names(spatial.options) &&
+        spatial.options$ignore.spatial == FALSE )) {
+
+      warning("To use spatial options you must provide a spatial dataframe
+              object. Spatial options are ignored.")
+    }
+
   }
 
+  # validate /  set spatial options
+  if (spatial.options$is.spatial == TRUE) {
 
-  if (is.spatial == TRUE) {
+    spatial.data <- data
+    data <- spatial.data@data
 
-    spatial_data <- data
-    data <- spatial_data@data
-
-    if (!('spatial.decay.model' %in% names(spatial.options))) {
-        spatial.options$spatial.decay.model <- "morans"
+    if (!('decay.model' %in% names(spatial.options))) {
+        spatial.options$decay.model <- "morans"
     }
 
-    if (!('spatial.thresholds' %in% names(spatial.options))) {
+    if (!('thresholds' %in% names(spatial.options))) {
       print("Auto-calculating spatial thresholds...")
       #
 
@@ -39,16 +54,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
       #
     }
 
-  } else {
-    # Not a spatial dataframe - check to make sure the user doesn't think
-    # they're using spatial functions.
-    if (('spatial.thresholds' %in% names(spatial.options)) ||
-        ('spatial.decay.model' %in% names(spatial.options)) ||
-        ('ignore.spatial' %in% names(spatial.options)) &&
-        spatial.options$ignore.spatial == FALSE )) {
-
-      warning("To use spatial options you must provide a spatial dataframe
-              object. Spatial options are ignored.")
+    if (!('caliper' %in% names(spatial.options))) {
+        spatial.options$caliper <- 0
     }
 
   }
@@ -89,8 +96,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   if (is.numeric(distance)) {
     fn1 <- "distance2user"
     stop(distance, "not supported.")
-
   }
+
   fn2 <- paste("matchit2", method, sep="")
   if (!exists(fn2)) {
     stop(method, "not supported.")
@@ -153,23 +160,20 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   # If there is a spatial object, then distance is a list that contains
   # the spatial data frame, decay model, thresholds, and PSM distances.
   # Otherwise, it's only a vector.
-  if (is.spatial == TRUE) {
-    t_dist = distance
-    distance = list(t_dist, spatial_data,
-                    spatial.options$spatial.decay.model,
-                    spatial.options$spatial.thresholds)
+  if (spatial.options$is.spatial == TRUE) {
+
+    combined.options < list(distance, spatial.data,
+                            spatial.options$decay.model,
+                            spatial.options$thresholds,
+                            spatial.options$caliper)
+  } else {
+    combined.options <- distance
   }
 
   # matching!
-  out2 <- do.call(fn2, list(treat, X, data, distance=distance, discarded,
-                            is.full.mahalanobis=is.full.mahalanobis,
-                            caliper=caliper, ...))
+  out2 <- do.call(fn2, list(treat, X, data, distance = combined.options, discarded,
+                            is.full.mahalanobis = is.full.mahalanobis, ...))
 
-  if (class(distance) == "list") {
-    # For the summary function, we need to redefine distance as only
-    # the input PSM distances
-    distance = distance[[1]]
-  }
 
   # no distance for full mahalanobis matching
   if (fn1 == "distance2mahalanobis") {
@@ -201,4 +205,5 @@ matchit <- function(formula, data, method="nearest", distance="logit",
                        c("Control","Treated"))
   out2$nn <- nn
   return(out2)
+
 }

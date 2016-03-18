@@ -6,8 +6,8 @@
 data(lalonde)
 
 ## conduct full matching using the propensity score based on logistic regression
-m.out <- matchit(treat ~ age + educ + black + hispan + married +
-                 nodegree + re74 + re75, data = lalonde,
+m.out <- matchit(treat ~ age + educ + black + hisp + married +
+                 nodegr + re74 + re75, data = lalonde,
                  method = "full", distance = "logit")
 
 ## print a short summary

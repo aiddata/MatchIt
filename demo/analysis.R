@@ -9,13 +9,13 @@ data(lalonde)
 library(Zelig)
 
 ## propensity score matching
-m.out1 <- matchit(treat ~ age + educ + black + hispan + nodegree + married + re74 + re75, 
+m.out1 <- matchit(treat ~ age + educ + black + hisp + nodegr + married + re74 + re75, 
                   method = "nearest", data = lalonde)
 user.prompt()
 
 ## fit the linear model to the control group controlling for propensity score and 
 ## other covariates
-z.out1 <- zelig(re78 ~ age + educ + black + hispan + nodegree + married + re74 + re75 +
+z.out1 <- zelig(re78 ~ age + educ + black + hisp + nodegr + married + re74 + re75 +
                        distance, data = match.data(m.out1, "control"), model = "ls")
 user.prompt()
 
@@ -39,7 +39,7 @@ user.prompt()
 
 ## fit the linear model to the treatment group controlling for propensity score and 
 ## other covariates
-z.out2 <- zelig(re78 ~ age + educ + black + hispan + nodegree + married + re74 + re75 +
+z.out2 <- zelig(re78 ~ age + educ + black + hisp + nodegr + married + re74 + re75 +
                        distance, data = match.data(m.out1, "treat"), model = "ls")
 user.prompt()
 
@@ -50,33 +50,37 @@ user.prompt()
 s.out2 <- sim(z.out2, x = x.out2)
 user.prompt()
 
-##  Note that Zelig calculates the difference between observed and
-##  either predicted or expected values.  This means that the treatment
-##  effect for the control units is actually the effect of control
-##  (observed control outcome minus the imputed outcome under treatment
-##  from the model).  Hence, to combine treatment effects just reverse
-##  the signs of the estimated treatment effect of controls.
-ate.all <- c(s.out1$qi$att.ev, -s.out2$qi$att.ev)
-user.prompt()
+# -----
+# 2016-03-18 : this does not work
 
-## some summaries
-## point estimate
-print(mean(ate.all))
-user.prompt()
-## standard error
-print(sd(ate.all))
-user.prompt()
-## 95% confidence interval
-print(quantile(ate.all, c(0.025, 0.975)))
-user.prompt()
+# ##  Note that Zelig calculates the difference between observed and
+# ##  either predicted or expected values.  This means that the treatment
+# ##  effect for the control units is actually the effect of control
+# ##  (observed control outcome minus the imputed outcome under treatment
+# ##  from the model).  Hence, to combine treatment effects just reverse
+# ##  the signs of the estimated treatment effect of controls.
+# ate.all <- c(s.out1$qi$att.ev, -s.out2$qi$att.ev)
+# user.prompt()
+# 
+# ## some summaries
+# ## point estimate
+# print(mean(ate.all))
+# user.prompt()
+# ## standard error
+# print(sd(ate.all))
+# user.prompt()
+# ## 95% confidence interval
+# print(quantile(ate.all, c(0.025, 0.975)))
+# user.prompt()
 
+# -----
 
 ###
 ### Example 3: subclassification
 ###
 
 ## subclassification with 4 subclasses
-m.out2 <- matchit(treat ~ age + educ + black + hispan + nodegree + married + re74 + re75,  
+m.out2 <- matchit(treat ~ age + educ + black + hisp + nodegr + married + re74 + re75,  
                   data = lalonde, method = "subclass", subclass = 4)
 user.prompt()
 
