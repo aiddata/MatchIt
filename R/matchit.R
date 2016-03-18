@@ -40,7 +40,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     data <- spatial.data@data
 
     if (!('decay.model' %in% names(spatial.options))) {
-        spatial.options$decay.model <- "morans"
+      spatial.options$decay.model <- "morans"
     }
 
     if (!('thresholds' %in% names(spatial.options))) {
@@ -55,7 +55,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     }
 
     if (!('caliper' %in% names(spatial.options))) {
-        spatial.options$caliper <- 0
+      spatial.options$caliper <- 0
     }
 
   }
@@ -94,6 +94,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     }
   }
   if (is.numeric(distance)) {
+    # do not think this exists yet
+    # does it need to be built or the related options supported somehow?
     fn1 <- "distance2user"
     stop(distance, "not supported.")
   }
@@ -105,6 +107,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
 
   # obtain T and X
   tryerror <- try(model.frame(formula), TRUE)
+  # get formula terms
   if (distance %in% c("GAMlogit", "GAMprobit", "GAMcloglog", "GAMlog",
                       "GAMcauchit")) {
     library(mgcv)
@@ -169,7 +172,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   } else {
     combined.options <- distance
   }
-
+  
   # matching!
   out2 <- do.call(fn2, list(treat, X, data, distance = combined.options, discarded,
                             is.full.mahalanobis = is.full.mahalanobis, ...))
