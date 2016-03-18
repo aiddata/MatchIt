@@ -162,7 +162,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   # Otherwise, it's only a vector.
   if (spatial.options$is.spatial == TRUE) {
 
-    combined.options < list(distance, spatial.data,
+    combined.options <- list(distance, spatial.data,
                             spatial.options$decay.model,
                             spatial.options$thresholds,
                             spatial.options$caliper)

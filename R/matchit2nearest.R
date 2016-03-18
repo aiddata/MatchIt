@@ -128,7 +128,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   r <- 1
 
   # Caliper for matching (=0 if caliper matching not done)
-  if (exists("spatial.thresholds") & !is.null(distance) &
+  if (exists("spatial.thresholds") && !is.null(distance) &&
       spatial.caliper != 0) {
 
     sd.cal <- spatial.effects.pscore.caliper(spatial.thresholds,

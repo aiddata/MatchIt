@@ -11,6 +11,6 @@ check.is.spatial <- function(data) {
 
   }
 
-  return is.spatial
+  return(is.spatial)
 
 }

@@ -35,12 +35,12 @@ spdf_LL <- SpatialPointsDataFrame(coords, lalonde)
 
 ##Traditional, non-spatially weighted matching
 m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data=lalonde,
-                  method="nearest", distance="logit", caliper=.25)
+                  method="nearest", distance="logit", caliper=0.25)
 
 ##Matching accounting for spatial spillover and autocorrelation
-spatial_opts <- list(spatial.decay.model = "GausSemiVar",
-                     spatial.thresholds = c(.05),
-                     caliper=0.25)
+spatial_opts <- list(decay.model = "GausSemiVar",
+                     thresholds = c(.05),
+                     caliper = 0.25)
 
 m.out2 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
                   method = "nearest", distance = "logit",
