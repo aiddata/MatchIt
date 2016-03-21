@@ -43,7 +43,7 @@ distance2cauchit <- function(formula, data, ...) {
   return(list(model = res, distance = fitted(res)))
 }
 
-distance2linearcauchit <- function(formula, data, ...) {
+distance2linear.cauchit <- function(formula, data, ...) {
   res <- glm(formula, data, family=binomial(cauchit), ...)
   return(list(model = res, distance = predict(res)))
 }

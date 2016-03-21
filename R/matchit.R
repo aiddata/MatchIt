@@ -123,6 +123,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   treat <- model.response(mf)
   X <- model.matrix(tt, data=mf)
 
+  # ===========================================================================
+
   # estimate the distance measure
   if (method == "exact") {
     distance <- out1 <- discarded <- NULL
@@ -135,13 +137,19 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     discarded <- discard(treat, distance, discard, X)
 
   } else {
+
+    # fill in distance formula/data if needed
     if (is.null(distance.options$formula)) {
       distance.options$formula <- formula
     }
     if (is.null(distance.options$data)) {
       distance.options$data <- data
     }
+
+    # run distance function
     out1 <- do.call(fn1, distance.options)
+
+    # discard / reestimate if needed
     discarded <- discard(treat, out1$distance, discard, X)
     if (reestimate) {
       distance.options$data <- data[!discarded,]
@@ -151,15 +159,11 @@ matchit <- function(formula, data, method="nearest", distance="logit",
       tmp$distance[!discarded] <- out1$distance
       out1$distance <- tmp$distance
     }
+
     distance <- out1$distance
   }
 
-  # full mahalanobis matching
-  if (fn1 == "distance2mahalanobis") {
-    is.full.mahalanobis <- TRUE
-  } else {
-    is.full.mahalanobis <- FALSE
-  }
+  # ===========================================================================
 
   # ---------------------------------------------------------------------------
   # If there is a spatial object, then distance is a list that contains
@@ -176,11 +180,17 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   }
   # ---------------------------------------------------------------------------
 
-  # matching!
+  # full mahalanobis matching
+  if (fn1 == "distance2mahalanobis") {
+    is.full.mahalanobis <- TRUE
+  } else {
+    is.full.mahalanobis <- FALSE
+  }
+
+  # run matching function
   out2 <- do.call(fn2, list(treat, X, data,
                             distance = combined.options, discarded,
                             is.full.mahalanobis = is.full.mahalanobis, ...))
-
 
   # no distance for full mahalanobis matching
   if (fn1 == "distance2mahalanobis") {
