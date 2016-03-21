@@ -78,5 +78,7 @@ spatial.effects.pscore.itert <- function(spatial.threshold,
 
   # calculate the weighted P-scores
   spatial.weighted.pscores <- spatial.weights * deviation
+
   return(spatial.weighted.pscores)
+
 }

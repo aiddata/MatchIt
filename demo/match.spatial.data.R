@@ -53,3 +53,5 @@ m.out2 <- matchit(treat ~ re74 + re75 + age + educ, data = spdf_LL,
 #Include a mechanism to automatically model the spatial thresholds
 #Expose the funcitonality to generate a correlogram chart, with fitted curves
 #Integrate spatial functionality into methods other than nearest.
+
+
