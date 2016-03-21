@@ -4,8 +4,9 @@
 # Returns the matrix-wide, distance-weighted caliper.
 # caliper*sqrt(var(distance[in.sample==1]))
 
-spatial.effects.pscore.caliper <- function(spatial.thresholds,
-                                           spatial.decay.model, spatial.data,
+spatial.effects.pscore.caliper <- function(spatial.threshold,
+                                           spatial.decay.function,
+                                           spatial.data,
                                            distance, caliper, treat) {
 
   # Select the treated being analyzed to calculate distance penalties from
@@ -34,9 +35,10 @@ spatial.effects.pscore.caliper <- function(spatial.thresholds,
   }
 
   # Permute the geographic distances by the spatial distance-decay function.
-  spatial.weights <- spatial.effects.distance.decay(thresh=spatial.thresholds,
-                                                    model=spatial.decay.model,
-                                                    dist=geog.dist.matrix)
+  spatial.weights <- do.call(spatial.decay.function,
+                             list(thresh=spatial.threshold,
+                                  dist=geog.dist.vector))
+
 
   # calculate the weighted P-scores
   spatial.weighted.pscores <- spatial.weights * psm.dev.matrix
@@ -56,8 +58,8 @@ spatial.effects.pscore.caliper <- function(spatial.thresholds,
 # function. Further, a lower-bounds threshold is applied to mitigate the
 # potential for spillovers in treatments.
 
-spatial.effects.pscore.itert <- function(spatial.thresholds,
-                                         spatial.decay.model, spatial.data,
+spatial.effects.pscore.itert <- function(spatial.threshold,
+                                         spatial.decay.function, spatial.data,
                                          deviation, itert) {
 
   # Select the treated being analyzed to calculate distance penalties from
@@ -71,9 +73,9 @@ spatial.effects.pscore.itert <- function(spatial.thresholds,
   geog.dist.vector <- spDistsN1(pair.candidates, treated.unit)
 
   # Permute the geographic distances by the spatial distance-decay function.
-  spatial.weights <- spatial.effects.distance.decay(thresh=spatial.thresholds,
-                                                    model=spatial.decay.model,
-                                                    dist=geog.dist.vector)
+  spatial.weights <- do.call(spatial.decay.function,
+                             list(thresh=spatial.threshold,
+                                  dist=geog.dist.vector))
 
   # calculate the weighted P-scores
   spatial.weighted.pscores <- spatial.weights * deviation

@@ -10,8 +10,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # Exceptions for when spatial information is passed to matching functions.
   if (class(distance) == "list") {
     is.spatial <- TRUE
-    spatial.thresholds <- distance[[4]]
-    spatial.decay.model <- distance[[3]]
+    spatial.threshold <- distance[[4]]
+    spatial.decay.function <- distance[[3]]
     spatial.data <- distance[[2]]
     distance <- distance[[1]]
   } else {
@@ -136,7 +136,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   if (is.spatial == TRUE && !is.null(distance) && caliper != 0) {
 
     caliper.matrix <- spatial.effects.pscore.caliper(
-                        spatial.thresholds, spatial.decay.model, spatial.data,
+                        spatial.threshold, spatial.decay.function, spatial.data,
                         distance, caliper, treat)
   } else {
     caliper.matrix <- distance[in.sample == 1]
@@ -289,8 +289,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     # iteration, but that should be doable based on the d0 and d1 row titles.
     if (is.spatial == TRUE && !is.null(deviation)) {
 
-      deviation <- spatial.effects.pscore.itert(spatial.thresholds,
-                                                spatial.decay.model,
+      deviation <- spatial.effects.pscore.itert(spatial.threshold,
+                                                spatial.decay.function,
                                                 spatial.data,
                                                 deviation, itert)
     }

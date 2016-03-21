@@ -7,11 +7,13 @@ load_all("~/git/matchit/R")
 #install_github("itpir/matchit")
 library(MatchIt)
 
+library(ncf)
 # # for genetic
 # library(rgenoud)
-# library(Matching)
+library(Matching)
 # # for cem
-# library(cem)
+library(cem)
+library(Zelig)
 
 # # for demo/analysis.R
 # # install Rgraphviz dependency of MCMCpack which is dependency of Zelig
@@ -38,7 +40,7 @@ m.out1 <- matchit(treat ~ re74 + re75 + age + educ, data=lalonde,
                   method="nearest", distance="logit", caliper=0.25)
 
 ##Matching accounting for spatial spillover and autocorrelation
-spatial_opts <- list(decay.model = "GausSemiVar",
+spatial_opts <- list(decay.model = "gaussian.semivariance",
                      thresholds = c(.05),
                      caliper = 0.25)
 

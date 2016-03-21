@@ -21,7 +21,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
 
     # Not a spatial dataframe - check to make sure the user doesn't think
     # they're using spatial functions.
-    if (('thresholds' %in% names(spatial.options)) ||
+    if (('threshold' %in% names(spatial.options)) ||
         ('decay.model' %in% names(spatial.options)) ||
         ('ignore.spatial' %in% names(spatial.options) &&
         spatial.options$ignore.spatial == FALSE )) {
@@ -40,24 +40,32 @@ matchit <- function(formula, data, method="nearest", distance="logit",
 
     if (!('decay.model' %in% names(spatial.options))) {
       # use morans as default decay model
-      spatial.options$decay.model <- "morans"
+      spatial.options$decay.model <- "spherical"
+      spatial.options$decay.function <- paste("distance.decay.", spatial.options$decay.model, sep="")
+
+      warning("No distance decay model provided. Using default spherical
+              method.")
 
     } else {
       # verfy decay model provided is valid
-      print("Verifying decay model...")
-      #code
+      fn0 <- paste("distance.decay.", spatial.options$decay.model, sep="")
+      if (!exists(fn0)) {
+        stop(spatial.options$decay.model, "distance decay model not supported.")
+      }
+      spatial.options$decay.function <- fn0
     }
 
-    if (!('thresholds' %in% names(spatial.options))) {
-      # auto generate spatial thresholds based on data
-      print("Auto-calculating spatial thresholds...")
-      # code
+    if (!('threshold' %in% names(spatial.options))) {
+
+      warning("No spatial threshold provided. Will use x-intercept of PSM score
+            correlogram with selected distance decay model.")
+      spatial.options$threshold <- "auto"
 
     } else {
-      # Check that the user-supplied thresholds make sense in terms of units
+      # Check that the user-supplied threshold make sense in terms of units
       # of measurement.
-      print("Running spatial threshold checks...")
-      # code
+      print("Custom threshold values should be verfied by user beforehand.
+            Erroneous values may cause errors or bad results.")
     }
 
   }
@@ -168,13 +176,30 @@ matchit <- function(formula, data, method="nearest", distance="logit",
 
   # ---------------------------------------------------------------------------
   # If there is a spatial object, then distance is a list that contains
-  # the spatial data frame, decay model, thresholds, and PSM distances.
+  # the spatial data frame, decay model, threshold, and PSM distances.
   # Otherwise, it's only a vector.
   if (spatial.options$is.spatial == TRUE) {
 
+    if (spatial.options$threshold == "auto") {
+      print("Calculating distance decay threshold based on PSM correlogram...")
+
+      correlogram_data <- correlog(x = coordinates(spatial.data)[,1],
+                                   y = coordinates(spatial.data)[,2],
+                                   z=distance, increment=5, latlon=TRUE,
+                                   na.rm=TRUE, resamp=50, quiet=TRUE)
+
+      spatial.options$threshold <- as.numeric(correlogram_data$x.intercept)
+
+      # print(correlogram_data)
+      print("Plotting correlogram and x-intercept (spatial threshold) for PSM distance")
+      plot.correlog(correlogram_data)
+      print(spatial.options$threshold)
+
+    }
+
     combined.options <- list(distance, spatial.data,
-                            spatial.options$decay.model,
-                            spatial.options$thresholds)
+                            spatial.options$decay.function,
+                            spatial.options$threshold)
   } else {
     combined.options <- distance
   }
