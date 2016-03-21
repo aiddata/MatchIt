@@ -2,7 +2,7 @@
 #based on the given distance-decay model.
 
 thresh_function <- function(x, thresh) {
-  if (x < thresh) {
+  if (x > thresh) {
     NA
   } else {
     1*x
@@ -14,11 +14,11 @@ sph_function <- function(x, thresh) {
 }
 
 gauss_function <- function(x, thresh) {
-  1 - exp (-(x^2/thresh^2))
+  exp (-(x^2/thresh^2))
 }
 
 exp_function <- function(x, thresh) {
-  1 - exp(-(x/thresh))
+  exp(-(x/thresh))
 }
 
 spatial.effects.distance.decay <- function(thresh, model, dist) {
