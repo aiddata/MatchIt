@@ -13,14 +13,14 @@ spatial.effects.pscore.itert <- function(spatial.thresholds,
                                          deviation, itert) {
 
   #Select the treated being analyzed to calculate distance penalties from
-  treated_unit <- spatial.data[rownames(spatial.data@data)==itert,]
+  treated_unit <- spatial.data[rownames(spatial.data@data) == itert,]
 
   #Identify candidates to match with
   pair_candidates <- spatial.data[names(deviation),]
   pair_candidates@data$unstd_deviation <- deviation
 
   #Calculate the geographic distances between points
-  geog_dist_vector<-spDistsN1(pair_candidates, treated_unit)
+  geog_dist_vector <- spDistsN1(pair_candidates, treated_unit)
 
 
   #Permute the geographic distances by the spatial distance-decay function.

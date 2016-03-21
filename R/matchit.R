@@ -2,6 +2,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
                     distance.options=list(), spatial.options=list(),
                     discard="none", reestimate=FALSE, ...) {
 
+  # ---------------------------------------------------------------------------
   # spatial input format checks
   spatial.options$is.spatial <- check.is.spatial(data)
 
@@ -45,13 +46,13 @@ matchit <- function(formula, data, method="nearest", distance="logit",
 
     if (!('thresholds' %in% names(spatial.options))) {
       print("Auto-calculating spatial thresholds...")
-      #
+      # code
 
     } else {
-      # Check that the user-supplied thresholds make sense in terms of
-      # units of measurement.
+      # Check that the user-supplied thresholds make sense in terms of units
+      # of measurement.
       print("Running spatial threshold checks...")
-      #
+      # code
     }
 
     if (!('caliper' %in% names(spatial.options))) {
@@ -59,6 +60,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     }
 
   }
+  # ---------------------------------------------------------------------------
 
 
   # data input
@@ -159,7 +161,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     is.full.mahalanobis <- FALSE
   }
 
-
+  # ---------------------------------------------------------------------------
   # If there is a spatial object, then distance is a list that contains
   # the spatial data frame, decay model, thresholds, and PSM distances.
   # Otherwise, it's only a vector.
@@ -172,9 +174,11 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   } else {
     combined.options <- distance
   }
-  
+  # ---------------------------------------------------------------------------
+
   # matching!
-  out2 <- do.call(fn2, list(treat, X, data, distance = combined.options, discarded,
+  out2 <- do.call(fn2, list(treat, X, data,
+                            distance = combined.options, discarded,
                             is.full.mahalanobis = is.full.mahalanobis, ...))
 
 

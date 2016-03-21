@@ -6,7 +6,7 @@
 data(lalonde)
 
 ## exact matching
-m.out <- matchit(treat ~ educ + black + hisp, data = lalonde,
+m.out <- matchit(treat ~ educ + black + hispan, data = lalonde,
                  method = "exact")
 user.prompt()
 

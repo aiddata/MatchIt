@@ -6,6 +6,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
                              is.full.mahalanobis,...){
 
 
+  # ---------------------------------------------------------------------------
   # Exceptions for when spatial information is passed to matching functions.
   if (class(distance) == "list") {
     spatial.caliper <- distance[[5]]
@@ -14,6 +15,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     spatial.data <- distance[[2]]
     distance <- distance[[1]]
   }
+  # ---------------------------------------------------------------------------
 
   if (verbose) {
     cat("Nearest neighbor matching... \n")
@@ -127,6 +129,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   tr <- length(match.matrix[match.matrix != -1])
   r <- 1
 
+  # ---------------------------------------------------------------------------
   # Caliper for matching (=0 if caliper matching not done)
   if (exists("spatial.thresholds") && !is.null(distance) &&
       spatial.caliper != 0) {
@@ -137,6 +140,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   } else {
     sd.cal <- caliper * sqrt(var(distance[in.sample == 1]))
   }
+  # ---------------------------------------------------------------------------
 
   # Var-covar matrix for Mahalanobis (currently set for full sample)
   if (!is.null(mahvars) & !is.full.mahalanobis) {
@@ -273,6 +277,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
       }
     }
 
+    # -------------------------------------------------------------------------
     # Spatial penalties are applied to the deviations calculated here.
     # This should be through a function which draws in the spatial data.
     # The current trick is identifying the relevant data for the current
@@ -284,6 +289,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
                                                 spatial.data,
                                                 deviation, itert)
     }
+    # -------------------------------------------------------------------------
 
     if (caliper != 0 & (!is.null(deviation))) {
       if (replace & r != 1) {
@@ -364,9 +370,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     if (is.null(sub.by)) {
       sub.by = "treat"
     }
-    psres <- matchit2subclass(treat,X,data,distance,discarded,
-                              match.matrix=match.matrix,
-                              subclass=subclass,
+    psres <- matchit2subclass(treat, X, data, distance, discarded,
+                              match.matrix=match.matrix, subclass=subclass,
                               verbose=verbose, sub.by=sub.by, ...)
     res$subclass <- psres$subclass
     res$q.cut <- psres$q.cut
