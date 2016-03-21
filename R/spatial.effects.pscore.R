@@ -35,10 +35,9 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
   }
 
   # Permute the geographic distances by the spatial distance-decay function.
-  spatial.weights <- do.call(spatial.decay.function,
-                             list(thresh=spatial.threshold,
-                                  dist=geog.dist.vector))
-
+  spatial.weights <- run.distance.decay(thresh=spatial.threshold,
+                                        dist=geog.dist.matrix,
+                                        func=spatial.decay.function)
 
   # calculate the weighted P-scores
   spatial.weighted.pscores <- spatial.weights * psm.dev.matrix
@@ -73,9 +72,9 @@ spatial.effects.pscore.itert <- function(spatial.threshold,
   geog.dist.vector <- spDistsN1(pair.candidates, treated.unit)
 
   # Permute the geographic distances by the spatial distance-decay function.
-  spatial.weights <- do.call(spatial.decay.function,
-                             list(thresh=spatial.threshold,
-                                  dist=geog.dist.vector))
+  spatial.weights <- run.distance.decay(thresh=spatial.threshold,
+                                        dist=geog.dist.vector,
+                                        func=spatial.decay.function)
 
   # calculate the weighted P-scores
   spatial.weighted.pscores <- spatial.weights * deviation
