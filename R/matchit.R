@@ -15,16 +15,14 @@ matchit <- function(formula, data, method="nearest", distance="logit",
       warning("Spatial attributes and options are being ignored, as
               ignore.spatial is set to TRUE.")
 
-    } else {
-      spatial.options$is.spatial <- TRUE
     }
+
   } else {
 
     # Not a spatial dataframe - check to make sure the user doesn't think
     # they're using spatial functions.
     if (('thresholds' %in% names(spatial.options)) ||
         ('decay.model' %in% names(spatial.options)) ||
-        ('caliper' %in% names(spatial.options)) ||
         ('ignore.spatial' %in% names(spatial.options) &&
         spatial.options$ignore.spatial == FALSE )) {
 
@@ -41,10 +39,17 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     data <- spatial.data@data
 
     if (!('decay.model' %in% names(spatial.options))) {
+      # use morans as default decay model
       spatial.options$decay.model <- "morans"
+
+    } else {
+      # verfy decay model provided is valid
+      print("Verifying decay model...")
+      #code
     }
 
     if (!('thresholds' %in% names(spatial.options))) {
+      # auto generate spatial thresholds based on data
       print("Auto-calculating spatial thresholds...")
       # code
 
@@ -53,10 +58,6 @@ matchit <- function(formula, data, method="nearest", distance="logit",
       # of measurement.
       print("Running spatial threshold checks...")
       # code
-    }
-
-    if (!('caliper' %in% names(spatial.options))) {
-      spatial.options$caliper <- 0
     }
 
   }
@@ -173,8 +174,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
 
     combined.options <- list(distance, spatial.data,
                             spatial.options$decay.model,
-                            spatial.options$thresholds,
-                            spatial.options$caliper)
+                            spatial.options$thresholds)
   } else {
     combined.options <- distance
   }

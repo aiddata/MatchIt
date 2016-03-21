@@ -3,13 +3,13 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
                              caliper=0, calclosest=FALSE,
                              mahvars=NULL, exact=NULL,
                              subclass=NULL, verbose=FALSE, sub.by=NULL,
-                             is.full.mahalanobis,...){
+                             is.full.mahalanobis, ...){
 
 
   # ---------------------------------------------------------------------------
   # Exceptions for when spatial information is passed to matching functions.
   if (class(distance) == "list") {
-    spatial.caliper <- distance[[5]]
+    is.spatial <- TRUE
     spatial.thresholds <- distance[[4]]
     spatial.decay.model <- distance[[3]]
     spatial.data <- distance[[2]]
@@ -130,16 +130,19 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   r <- 1
 
   # ---------------------------------------------------------------------------
-  # Caliper for matching (=0 if caliper matching not done)
-  if (exists("spatial.thresholds") && !is.null(distance) &&
-      spatial.caliper != 0) {
+  # get matrix for caliper
+  if (is.spatial == TRUE && !is.null(distance) && caliper != 0) {
 
-    sd.cal <- spatial.effects.pscore.caliper(spatial.thresholds,
-                                            spatial.decay.model, spatial.data,
-                                            distance, spatial.caliper, treat)
+    caliper.matrix <- spatial.effects.pscore.caliper(
+                        spatial.thresholds, spatial.decay.model, spatial.data,
+                        distance, caliper, treat)
   } else {
-    sd.cal <- caliper * sqrt(var(distance[in.sample == 1]))
+    caliper.matrix <- distance[in.sample == 1]
   }
+
+  # caliper for matching (is equal to 0 if caliper matching not done)
+  sd.cal <- caliper * sqrt(var(caliper.matrix, na.rm=TRUE))
+
   # ---------------------------------------------------------------------------
 
   # Var-covar matrix for Mahalanobis (currently set for full sample)
@@ -282,7 +285,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     # This should be through a function which draws in the spatial data.
     # The current trick is identifying the relevant data for the current
     # iteration, but that should be doable based on the d0 and d1 row titles.
-    if (exists("spatial.thresholds") & !is.null(deviation)) {
+    if (is.spatial == TRUE && !is.null(deviation)) {
 
       deviation <- spatial.effects.pscore.itert(spatial.thresholds,
                                                 spatial.decay.model,
@@ -333,7 +336,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
     # Resolving ties in minimum deviation by random draw
     if (length(mindev) > 1) {
-      goodmatch <- sample(mindev,1)
+      goodmatch <- sample(mindev, 1)
     } else {
       goodmatch <- mindev
     }
