@@ -123,7 +123,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # These are the units that are ineligible because of discard
   # (in.sample==0)
   matchedc[in.sample[clabels] == 0] <- -1
-  match.matrix[in.sample[tlabels] == 0,] <- -1
+  match.matrix[in.sample[tlabels] == 0, ] <- -1
   matchedt <- match.matrix[,1]
   names(matchedt) <- tlabels
 
@@ -136,8 +136,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   if (is.spatial == TRUE && !is.null(distance) && caliper != 0) {
 
     caliper.matrix <- spatial.effects.pscore.caliper(
-                        spatial.threshold, spatial.decay.function, spatial.data,
-                        distance, caliper, treat)
+                        spatial.threshold, spatial.decay.function,
+                        spatial.data, distance, caliper, treat)
   } else {
     caliper.matrix <- distance[in.sample == 1]
   }
@@ -206,18 +206,18 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     matchedc2 <- matchedc
     #in cases there's no replacement and all controls have been used up
     if (!0 %in% matchedc2) {
-      match.matrix[match.matrix[,r] == 0 & !is.na(match.matrix[,r]), r] <- NA
+      match.matrix[match.matrix[, r] == 0 & !is.na(match.matrix[, r]), r] <- NA
       if (r < ratio) {
-        match.matrix[,(r+1):ratio] <- NA
+        match.matrix[, (r+1):ratio] <- NA
       }
       break
     }
 
     #in case there's replacement, but all units have been used in
     #previous ratios
-    if (sum(!is.na(match.matrix[,r])) == 0) {
+    if (sum(!is.na(match.matrix[, r])) == 0) {
       if (r < ratio) {
-        match.matrix[,(r+1):ratio] <- NA
+        match.matrix[, (r+1):ratio] <- NA
       }
       break
     }
@@ -225,7 +225,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     # Which ratio we're on
     if (r != ceiling(i/(tr/ratio))) {
       r <- r+1
-      matchedt <- match.matrix[,r]
+      matchedt <- match.matrix[, r]
     }
 
     if (m.order == "largest") {
@@ -235,7 +235,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
       iterd1 <- min(d1[matchedt == 0], na.rm=T)
     }
     if (m.order == "random") {
-      iterd1 <- sample(d1[matchedt == 0][!is.na(d1[matchedt == 0])],1)
+      iterd1 <- sample(d1[matchedt == 0][!is.na(d1[matchedt == 0])], 1)
     }
 
     # The treatment unit for this iteration, again resolving ties randomly
@@ -260,17 +260,19 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
     if (!is.null(exact)) {
       for (k in 1:dim(exact)[2]) {
-        matchedc2[exact[itert,k] != exact[clabels,k]] <- -2
+        matchedc2[exact[itert, k] != exact[clabels, k]] <- -2
       }
     }
 
     # Need to add a check in case there aren't any eligible matches left...
     if (replace & r != 1) {
-      if (sum(!clabels %in% match.matrix[itert, (1:r-1)] & matchedc2 == 0) == 0) {
+      if (sum(!clabels %in% match.matrix[itert, (1:r-1)] &
+              matchedc2 == 0) == 0) {
         deviation <- NULL
         mindev <- NA
       } else {
-        deviation <- abs(d0[!clabels %in% match.matrix[itert,(1:r-1)] & matchedc2 == 0] - iterd1)
+        deviation <- abs(d0[!clabels %in% match.matrix[itert, (1:r-1)] &
+                            matchedc2 == 0] - iterd1)
       }
     }
     else {
@@ -278,7 +280,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         deviation <- NULL
         mindev <- NA
       } else {
-        deviation <- abs(d0[matchedc2==0]-iterd1)
+        deviation <- abs(d0[matchedc2 == 0] - iterd1)
       }
     }
 
@@ -298,7 +300,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
     if (caliper != 0 & (!is.null(deviation))) {
       if (replace & r != 1) {
-        pool <- clabels[!clabels %in% match.matrix[itert,(1:r-1)]
+        pool <- clabels[!clabels %in% match.matrix[itert, (1:r-1)]
                         & matchedc2 == 0][deviation <= sd.cal]
       } else {
         pool <- clabels[matchedc2 == 0][deviation <= sd.cal]
@@ -312,10 +314,12 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
           mindev <- NA
         } else {
           if (replace & r != 1) {
-            mindev <- clabels[!clabels %in% match.matrix[itert,(1:r-1)]][min(deviation) == deviation]
+            mindev.check <- (!clabels %in% match.matrix[itert, (1:r-1)])
           } else {
-            mindev <- clabels[matchedc2 == 0][min(deviation) == deviation]
+            mindev.check <- (matchedc2 == 0)
           }
+          mindev <- clabels[mindev.check][min(deviation) == deviation]
+
         }
       } else if (length(pool) == 1) {
         mindev <- pool[1]
@@ -325,15 +329,18 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         # This has the important vars for the C's within the caliper
         poolvarsC <- mahvars[pool,,drop=F]
         # Sigma is the full group var/covar matrix of Mahalvars
-        mahal <- mahalanobis(poolvarsC, mahvars[itert,], Sigma)
+        mahal <- mahalanobis(poolvarsC, mahvars[itert, ], Sigma)
         mindev <- pool[mahal == min(mahal)]
       }
     } else if (!is.null(deviation)) {
       if (replace & r != 1) {
-        mindev <- clabels[!clabels %in% match.matrix[itert, (1:r-1)] & matchedc2 == 0][min(deviation) == deviation]
+        mindev.check <- (!clabels %in% match.matrix[itert, (1:r-1)] &
+                         matchedc2 == 0)
       } else {
-        mindev <- clabels[matchedc2 == 0][min(deviation) == deviation]
+        mindev.check <- (matchedc2 == 0)
       }
+      mindev <- clabels[mindev.check][min(deviation) == deviation]
+
     }
 
     # Resolving ties in minimum deviation by random draw

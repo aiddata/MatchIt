@@ -92,8 +92,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
   # 7/13/06: Convert character variables to factors as necessary
   ischar <- rep(0, dim(data)[2])
   for (i in 1:dim(data)[2]) {
-    if (is.character(data[,i])) {
-      data[,i] <- as.factor(data[,i])
+    if (is.character(data[, i])) {
+      data[, i] <- as.factor(data[, i])
     }
   }
 
@@ -161,7 +161,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     # discard / reestimate if needed
     discarded <- discard(treat, out1$distance, discard, X)
     if (reestimate) {
-      distance.options$data <- data[!discarded,]
+      distance.options$data <- data[!discarded, ]
       distance.options$weights <- distance.options$weights[!discarded]
       tmp <- out1
       out1 <- do.call(fn1, distance.options)
@@ -183,8 +183,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     if (spatial.options$threshold == "auto") {
       print("Calculating distance decay threshold based on PSM correlogram...")
 
-      correlogram_data <- correlog(x = coordinates(spatial.data)[,1],
-                                   y = coordinates(spatial.data)[,2],
+      correlogram_data <- correlog(x=coordinates(spatial.data)[, 1],
+                                   y=coordinates(spatial.data)[, 2],
                                    z=distance, increment=5, latlon=TRUE,
                                    na.rm=TRUE, resamp=50, quiet=TRUE)
 
@@ -236,13 +236,13 @@ matchit <- function(formula, data, method="nearest", distance="logit",
 
   # basic summary
   nn <- matrix(0, ncol=2, nrow=4)
-  nn[1,] <- c(sum(out2$treat == 0), sum(out2$treat == 1))
-  nn[2,] <- c(sum(out2$treat == 0 & out2$weights > 0),
-              sum(out2$treat == 1 & out2$weights > 0))
-  nn[3,] <- c(sum(out2$treat == 0 & out2$weights == 0 & out2$discarded == 0),
-              sum(out2$treat == 1 & out2$weights == 0 & out2$discarded == 0))
-  nn[4,] <- c(sum(out2$treat == 0 & out2$weights == 0 & out2$discarded == 1),
-              sum(out2$treat == 1 & out2$weights == 0 & out2$discarded == 1))
+  nn[1, ] <- c(sum(out2$treat == 0), sum(out2$treat == 1))
+  nn[2, ] <- c(sum(out2$treat == 0 & out2$weights > 0),
+               sum(out2$treat == 1 & out2$weights > 0))
+  nn[3, ] <- c(sum(out2$treat == 0 & out2$weights == 0 & out2$discarded == 0),
+               sum(out2$treat == 1 & out2$weights == 0 & out2$discarded == 0))
+  nn[4, ] <- c(sum(out2$treat == 0 & out2$weights == 0 & out2$discarded == 1),
+               sum(out2$treat == 1 & out2$weights == 0 & out2$discarded == 1))
   dimnames(nn) <- list(c("All","Matched","Unmatched","Discarded"),
                        c("Control","Treated"))
   out2$nn <- nn
