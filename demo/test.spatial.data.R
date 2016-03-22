@@ -12,7 +12,7 @@ library(ncf)
 library(gstat)
 
 
-# --------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # options
 
 # set dataframe size (number of points)
@@ -30,7 +30,10 @@ maxx <- 90
 miny <- 0
 maxy <- 45
 
-# --------------------------------------------------------------
+# correlogram increment size
+correlogram.increment <- 500
+
+# -----------------------------------------------------------------------------
 
 
 # generate random treatment and coordinates
@@ -78,7 +81,8 @@ m1.out <- matchit(treat ~ var1 + var2 + var3, data=spdf@data,
 # get correlogram for PSM distance, x-intercept and plot
 m1.correlogram.data <- correlog(x=spdf@coords[, 1],
                              y=spdf@coords[, 2],
-                             z=m1.out$distance, increment=200, latlon=TRUE,
+                             z=m1.out$distance, 
+                             increment=correlogram.increment, latlon=TRUE,
                              na.rm=TRUE, resamp=50, quiet=TRUE)
 
 m1.correlogram.xintercept <- as.numeric(m1.correlogram.data$x.intercept)
@@ -97,11 +101,13 @@ for (i in 1:length(m1.out$match.matrix)) {
     control.coords <- spdf[control.id, ]@coords
     treated.coords <- spdf[treated.id, ]@coords
     
-    m1.match.distances[i] <- spDists(control.coords, treated.coords, longlat=FALSE, segments=FALSE, diagonal=FALSE)
+    m1.match.distances[i] <- spDists(control.coords, treated.coords, 
+                                     longlat=FALSE, segments=FALSE, 
+                                     diagonal=FALSE)
   }
 }
 
-m1.autocorrelation.match.count = length(m1.match.distances[m1.match.distances < (m1.correlogram.xintercept/110)])
+m1.autocorrelation.match.count <- length(m1.match.distances[m1.match.distances < (m1.correlogram.xintercept/110)])
 
 
 # spatial matchit
@@ -116,7 +122,8 @@ m2.out <- matchit(treat ~ var1 + var2 + var3, data=spdf,
 # # get correlogram for PSM distance, x-intercept and plot
 # m2.correlogram.data <- correlog(x=spdf@coords[, 1],
 #                                 y=spdf@coords[, 2],
-#                                 z=m2.out$distance, increment=200, latlon=TRUE,
+#                                 z=m2.out$distance, 
+#                                 increment=correlogram.increment, latlon=TRUE, 
 #                                 na.rm=TRUE, resamp=50, quiet=TRUE)
 # 
 # m2.correlogram.xintercept <- as.numeric(m2.correlogram.data$x.intercept)
@@ -135,11 +142,13 @@ for (i in 1:length(m2.out$match.matrix)) {
     control.coords <- spdf[control.id, ]@coords
     treated.coords <- spdf[treated.id, ]@coords
     
-    m2.match.distances[i] <- spDists(control.coords, treated.coords, longlat=FALSE, segments=FALSE, diagonal=FALSE)
+    m2.match.distances[i] <- spDists(control.coords, treated.coords, 
+                                     longlat=FALSE, segments=FALSE, 
+                                     diagonal=FALSE)
   }
 }
 
-m2.autocorrelation.match.count = length(m2.match.distances[m2.match.distances < (m1.correlogram.xintercept/110)])
+m2.autocorrelation.match.count <- length(m2.match.distances[m2.match.distances < (m1.correlogram.xintercept/110)])
 
 
 
