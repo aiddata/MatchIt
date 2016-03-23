@@ -19,16 +19,16 @@ library(gstat)
 nrandom <- 1000
 
 # variogram model range (larger = coarser autocorrelation)
-vrange <- 15
+vrange <- 1500
 
 # numner of covariates
 ncovariates <- 3
 
 # define bounding box
-minx <- 0
-maxx <- 90
-miny <- 0
-maxy <- 45
+minx <- -45
+maxx <- 45
+miny <- -22.5
+maxy <- 22.5
 
 # correlogram increment size
 correlogram.increment <- 500
@@ -48,6 +48,9 @@ spdf <- data.frame(treat = random.treatment,
 
 # convert to spatial points dataframe
 coordinates(spdf) <- c("longitude", "latitude")
+proj4string(spdf) <- CRS("+proj=longlat +datum=WGS84")
+prj <- proj4string(spdf)
+spdf <- spTransform(spdf, CRS(prj))
 
 
 # using gstat to generate fields with spatial autocorrelation
@@ -56,7 +59,7 @@ coordinates(spdf) <- c("longitude", "latitude")
 
 # define the gstat object (spatial model)
 g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1, 
-                 model=vgm(psill=0.025, model="Exp", range=vrange), 
+                 model=vgm(psill=0.1, model="Sph", range=vrange), 
                  nmax=20)
 
 # make simulations based on the gstat object
@@ -73,6 +76,24 @@ spplot(spdf)
 
 
 
+vgm1 <- variogram(var1~1, spdf)
+plot(vgm1)
+
+
+# model.1 <- fit.variogram(vgm1,vgm(1,"Sph",300,1))
+# plot(vgm1, model=model.1)
+# plot(vgm1, plot.numbers = TRUE, pch = "+")
+# vgm2 <- variogram(log(zinc)~1, meuse, alpha=c(0,45,90,135))
+# plot(vgm2)
+# # the following demonstrates plotting of directional models:
+# model.2 <- vgm(.59,"Sph",926,.06,anis=c(0,0.3))
+# plot(vgm2, model=model.2)
+
+
+
+# -----------------------------------------------------------------------------
+
+
 # traditional, non-spatial matchit
 m1.out <- matchit(treat ~ var1 + var2 + var3, data=spdf@data,
                   method="nearest", distance="logit", caliper=0.25)
@@ -80,14 +101,33 @@ m1.out <- matchit(treat ~ var1 + var2 + var3, data=spdf@data,
 
 # get correlogram for PSM distance, x-intercept and plot
 m1.correlogram.data <- correlog(x=spdf@coords[, 1],
-                             y=spdf@coords[, 2],
-                             z=m1.out$distance, 
-                             increment=correlogram.increment, latlon=TRUE,
-                             na.rm=TRUE, resamp=50, quiet=TRUE)
+                                y=spdf@coords[, 2],
+                                z=m1.out$distance, 
+                                increment=correlogram.increment, latlon=TRUE,
+                                na.rm=TRUE, resamp=50, quiet=TRUE)
 
 m1.correlogram.xintercept <- as.numeric(m1.correlogram.data$x.intercept)
 
 plot.correlog(m1.correlogram.data)
+mtext("PSM pscores")
+
+m1.covariate.correlogram.xintercept <- c()
+for (i in 1:ncovariates) {
+
+  tmp.m1.correlogram.data <- correlog(x=spdf@coords[, 1],
+                                      y=spdf@coords[, 2],
+                                      z=spdf@data[[paste("var", i, sep="")]], 
+                                      increment=correlogram.increment, latlon=TRUE,
+                                      na.rm=TRUE, resamp=50, quiet=TRUE)
+  
+  m1.covariate.correlogram.xintercept[i] <- as.numeric(tmp.m1.correlogram.data$x.intercept)
+  
+  plot(tmp.m1.correlogram.data)
+  mtext(paste("var", i, sep=""))
+  
+}
+
+# -------------------------------------
 
 m1.match.distances <- c()
   
@@ -107,12 +147,18 @@ for (i in 1:length(m1.out$match.matrix)) {
   }
 }
 
-m1.autocorrelation.match.count <- length(m1.match.distances[m1.match.distances < (m1.correlogram.xintercept/110)])
+m1.autocorrelation.match.count <- length(m1.match.distances[!is.na(m1.match.distances) & m1.match.distances < (m1.correlogram.xintercept/110)])
+
+
+# -----------------------------------------------------------------------------
 
 
 # spatial matchit
 spatial.opts <- list(decay.model = "gaussian.semivariance",
-                     threshold = c(.05))
+                     threshold = 0.001)
+
+# spatial.opts <- list(decay.model = "threshold",
+#                      threshold = (m1.correlogram.xintercept/110))
 
 m2.out <- matchit(treat ~ var1 + var2 + var3, data=spdf,
                   method = "nearest", distance = "logit", caliper=0.25,
@@ -129,6 +175,8 @@ m2.out <- matchit(treat ~ var1 + var2 + var3, data=spdf,
 # m2.correlogram.xintercept <- as.numeric(m2.correlogram.data$x.intercept)
 # 
 # plot.correlog(m2.correlogram.data)
+
+# -------------------------------------
 
 m2.match.distances <- c()
 
@@ -148,10 +196,7 @@ for (i in 1:length(m2.out$match.matrix)) {
   }
 }
 
-m2.autocorrelation.match.count <- length(m2.match.distances[m2.match.distances < (m1.correlogram.xintercept/110)])
-
-
-
+m2.autocorrelation.match.count <- length(m2.match.distances[!is.na(m2.match.distances) & m2.match.distances < (m1.correlogram.xintercept/110)])
 
 
 

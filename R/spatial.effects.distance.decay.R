@@ -2,7 +2,7 @@
 # based on the given distance-decay model.
 
 distance.decay.threshold <- function(x, thresh) {
-  if (x > thresh) {
+  if (x < thresh) {
     NA
   } else {
     1*x
@@ -21,7 +21,9 @@ distance.decay.exponential.semivariance <- function(x, thresh) {
   exp(-(x/thresh))
 }
 
-# distance.decay.morans <- function(x, thresh) {
+# # weights values based off of correlogram using distance
+# # this might need additional arguments for correl/dist
+# distance.decay.morans <- function(x, thresh, correl?, dist?) {
 #
 # }
 
