@@ -150,6 +150,7 @@ correlogram.polynomial <- lm(y ~ poly(x, 10, raw=TRUE), data=model.correlogram.d
 
 neighbor.threshold <- 500
 
+tmp.weights <- c()
 for (i in 1:nrandom) {
   
   tmp.dist <- spDists(spdf[i, ]@coords, spdf@coords, 
@@ -164,9 +165,15 @@ for (i in 1:nrandom) {
     x = tmp.dist
   )
   tmp.newdata$y <- predict(correlogram.polynomial, tmp.newdata)
-    
+  
+  tmp.sum <- sum(abs(tmp.newdata$y) * tmp.neighbors * tmp.treated)
+  
+  tmp.weights[i] <- tmp.sum
 }
 
+spdf$weights <- tmp.weights
+
+spplot(spdf)
 
 # ====================================
 
