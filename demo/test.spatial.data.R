@@ -36,14 +36,12 @@ correlogram.increment <- 500
 # -----------------------------------------------------------------------------
 
 
-# generate random treatment and coordinates
-random.treatment <- rbinom(nrandom, 1, 0.5)
+# generate random coordinates
 random.longitude <- runif(nrandom, minx, maxx)
 random.latitude <- runif(nrandom, miny, maxy)
 
 # create dataframe
-spdf <- data.frame(treat = random.treatment,
-                   longitude = random.longitude,
+spdf <- data.frame(longitude = random.longitude,
                    latitude = random.latitude)
 
 # convert to spatial points dataframe
@@ -66,10 +64,24 @@ g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
 # where each simulation will be a variable
 sim <- predict(g.dummy, newdata=spdf, nsim=ncovariates)
 
+# initialize vars for generating treatment var
+tmp.var <- rep(0, nrandom)
+tmp.random <- runif(nrandom, min=0, max=1)
+
 # add covariates from sim to spatial dataframe
 for (i in 1:ncovariates) {
   spdf@data[[paste("var", i, sep="")]] <- sim@data[[paste("sim", i, sep="")]]
+
+  tmp.cov <- spdf@data[[paste("var", i, sep="")]]
+  tmp.var <- tmp.var + tmp.cov / max(tmp.cov) 
 }
+
+# incorporate covariate distribution into treatment
+tmp.treat.val <- tmp.random + tmp.var / ncovariates
+treatment.binary <- ifelse(tmp.treat.val > quantile(tmp.treat.val, 0.50), 1, 0)
+spdf$treat = treatment.binary
+
+
 
 # plot spatial autocorrelation of covariates
 spplot(spdf)
@@ -78,7 +90,6 @@ spplot(spdf)
 
 vgm1 <- variogram(var1~1, spdf)
 plot(vgm1)
-
 
 # model.1 <- fit.variogram(vgm1,vgm(1,"Sph",300,1))
 # plot(vgm1, model=model.1)
@@ -99,35 +110,66 @@ m1.out <- matchit(treat ~ var1 + var2 + var3, data=spdf@data,
                   method="nearest", distance="logit", caliper=0.25)
 
 
+# ====================================
+
 # get correlogram for PSM distance, x-intercept and plot
-m1.correlogram.data <- correlog(x=spdf@coords[, 1],
+correlogram.data <- correlog(x=spdf@coords[, 1],
                                 y=spdf@coords[, 2],
                                 z=m1.out$distance, 
                                 increment=correlogram.increment, latlon=TRUE,
                                 na.rm=TRUE, resamp=50, quiet=TRUE)
 
-m1.correlogram.xintercept <- as.numeric(m1.correlogram.data$x.intercept)
+correlogram.xintercept <- as.numeric(correlogram.data$x.intercept)
 
-plot.correlog(m1.correlogram.data)
+plot.correlog(correlogram.data)
 mtext("PSM pscores")
 
-m1.covariate.correlogram.xintercept <- c()
-for (i in 1:ncovariates) {
+# covariate.correlogram.xintercept <- c()
+# for (i in 1:ncovariates) {
+# 
+#   tmp.correlogram.data <- correlog(x=spdf@coords[, 1],
+#                                    y=spdf@coords[, 2],
+#                                    z=spdf@data[[paste("var", i, sep="")]], 
+#                                    increment=correlogram.increment, latlon=TRUE,
+#                                    na.rm=TRUE, resamp=50, quiet=TRUE)
+#   
+#   covariate.correlogram.xintercept[i] <- as.numeric(tmp.correlogram.data$x.intercept)
+#   
+#   plot(tmp.correlogram.data)
+#   mtext(paste("var", i, sep=""))
+#   
+# }
 
-  tmp.m1.correlogram.data <- correlog(x=spdf@coords[, 1],
-                                      y=spdf@coords[, 2],
-                                      z=spdf@data[[paste("var", i, sep="")]], 
-                                      increment=correlogram.increment, latlon=TRUE,
-                                      na.rm=TRUE, resamp=50, quiet=TRUE)
+model.correlogram.data <- data.frame(
+  y = correlogram.data$correlation,
+  x = correlogram.data$mean.of.class
+)
+
+correlogram.polynomial <- lm(y ~ poly(x, 10, raw=TRUE), data=model.correlogram.data)
+
+
+neighbor.threshold <- 500
+
+for (i in 1:nrandom) {
   
-  m1.covariate.correlogram.xintercept[i] <- as.numeric(tmp.m1.correlogram.data$x.intercept)
+  tmp.dist <- spDists(spdf[i, ]@coords, spdf@coords, 
+                      longlat=TRUE, segments=FALSE, 
+                      diagonal=FALSE)
+
+    
+  tmp.neighbors <- tmp.dist < neighbor.threshold
+  tmp.treated <- spdf$treat
   
-  plot(tmp.m1.correlogram.data)
-  mtext(paste("var", i, sep=""))
-  
+  tmp.newdata <- data.frame(
+    x = tmp.dist
+  )
+  tmp.newdata$y <- predict(correlogram.polynomial, tmp.newdata)
+    
 }
 
-# -------------------------------------
+
+# ====================================
+
 
 m1.match.distances <- c()
   
@@ -163,18 +205,6 @@ spatial.opts <- list(decay.model = "gaussian.semivariance",
 m2.out <- matchit(treat ~ var1 + var2 + var3, data=spdf,
                   method = "nearest", distance = "logit", caliper=0.25,
                   spatial.options=spatial.opts)
-
-
-# # get correlogram for PSM distance, x-intercept and plot
-# m2.correlogram.data <- correlog(x=spdf@coords[, 1],
-#                                 y=spdf@coords[, 2],
-#                                 z=m2.out$distance, 
-#                                 increment=correlogram.increment, latlon=TRUE, 
-#                                 na.rm=TRUE, resamp=50, quiet=TRUE)
-# 
-# m2.correlogram.xintercept <- as.numeric(m2.correlogram.data$x.intercept)
-# 
-# plot.correlog(m2.correlogram.data)
 
 # -------------------------------------
 
