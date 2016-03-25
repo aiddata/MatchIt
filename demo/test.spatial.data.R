@@ -330,11 +330,28 @@ m2.autocorrelation.match.count <- length(
 
 
 
-traditional.diff <- c()
-spatial.diff <- c()
+traditional.diff.a <- c()
+spatial.diff.a <- c()
 
-traditional.coef <- c()
-spatial.coef <- c()
+traditional.diff.b <- c()
+spatial.diff.b <- c()
+
+
+
+# traditional.coef1 <- c()
+# spatial.coef1 <- c()
+# 
+# traditional.coef2 <- c()
+# spatial.coef2 <- c()
+# 
+# traditional.coef3 <- c()
+# spatial.coef3 <- c()
+# 
+# traditional.coef4 <- c()
+# spatial.coef4 <- c()
+# 
+# traditional.coef5 <- c()
+# spatial.coef5 <- c()
 
 true.treatment <- c()
 
@@ -353,42 +370,126 @@ for (i in 1:length(z.vals)) {
   spdf$outcome <- spdf$treatment.effect + spdf$spillover +
     spdf$ancillary + spdf$error + spdf$intercept
 
-  true.treatment[i] <- theta + mean(spdf$spillover)
+  true.treatment[i] <- theta + (z * tmp.spillover.t1 / nrandom)
 
-#   spplot(spdf, zcol=c('treatment.effect'), main='treatment.effect')
-#   spplot(spdf, zcol=c('spillover'), main='spillover')
-#   spplot(spdf, zcol=c('ancillary'), main='ancillary')
-#
-#   spplot(spdf, zcol=c('treatment.effect', 'spillover', 'ancillary'),
-#          main='treatment.effect, spillover, ancillary')
-#
-#   spplot(spdf, zcol=c('outcome'), main='outcome')
+  # spplot(spdf, zcol=c('treatment.effect'), main='treatment.effect')
+  # spplot(spdf, zcol=c('spillover'), main='spillover')
+  # spplot(spdf, zcol=c('ancillary'), main='ancillary')
 
-  test.model.traditional <- lm(outcome ~ treatment.status + var1 + var2 + var3,
+  # spplot(spdf, zcol=c('treatment.effect', 'spillover', 'ancillary'),
+  #        main='treatment.effect, spillover, ancillary')
+
+  # spplot(spdf, zcol=c('outcome'), main='outcome')
+
+  test.model.traditional.a <- lm(outcome ~ treatment.status + var1 + var2 + var3,
+                                 data=match.data(m1.out))
+  test.model.spatial.a <- lm(outcome ~ treatment.status + var1 + var2 + var3,
+                             data=match.data(m2.out))
+  
+  test.model.traditional.b <- lm(outcome ~ 0 + treatment.status + var1 + var2 + var3,
                                data=match.data(m1.out))
-  test.model.spatial <- lm(outcome ~ treatment.status + var1 + var2 + var3,
+  test.model.spatial.b <- lm(outcome ~ 0 + treatment.status + var1 + var2 + var3,
                            data=match.data(m2.out))
 
-  test.predict.traditional <- predict(test.model.traditional, spdf@data)
-  test.predict.spatial <- predict(test.model.spatial, spdf@data)
 
-  traditional.diff[i] <- mean(test.predict.traditional - spdf$outcome)
-  spatial.diff[i] <- mean(test.predict.spatial - spdf$outcome)
+  test.predict.traditional.a <- predict(test.model.traditional.a, spdf@data)
+  test.predict.spatial.a <- predict(test.model.spatial.a, spdf@data)
 
-  traditional.coef[i] <- summary(test.model.traditional)$coef[2,1]
-  spatial.coef[i] <- summary(test.model.spatial)$coef[2,1]
+  test.predict.traditional.b <- predict(test.model.traditional.b, spdf@data)
+  test.predict.spatial.b <- predict(test.model.spatial.b, spdf@data)
+  
+  
+  traditional.diff.a[i] <- mean(test.predict.traditional.a - spdf$outcome)
+  spatial.diff.a[i] <- mean(test.predict.spatial.a - spdf$outcome)
 
+  traditional.diff.b[i] <- mean(test.predict.traditional.b - spdf$outcome)
+  spatial.diff.b[i] <- mean(test.predict.spatial.b - spdf$outcome)
+  
+  
+  if (i == 1) {
+    traditional.coef.a <- summary(test.model.traditional.a)$coef[, 1]
+    spatial.coef.a <- summary(test.model.spatial.a)$coef[, 1]
+    
+    traditional.coef.b <- summary(test.model.traditional.b)$coef[, 1]
+    spatial.coef.b <- summary(test.model.spatial.b)$coef[, 1]
+    
+  } else {
+    traditional.coef.a <- rbind(traditional.coef.a, summary(test.model.traditional.a)$coef[, 1])
+    spatial.coef.a <- rbind(spatial.coef.a, summary(test.model.spatial.a)$coef[, 1])
+    
+    traditional.coef.b <- rbind(traditional.coef.b, summary(test.model.traditional.b)$coef[, 1])
+    spatial.coef.b <- rbind(spatial.coef.b, summary(test.model.spatial.b)$coef[, 1])
+  }
+
+  
+#   traditional.coef1[i] <- summary(test.model.traditional)$coef[1, 1]
+#   spatial.coef1[i] <- summary(test.model.spatial)$coef[1, 1]
+#   
+#   traditional.coef2[i] <- summary(test.model.traditional)$coef[2, 1]
+#   spatial.coef2[i] <- summary(test.model.spatial)$coef[2, 1]
+# 
+#   traditional.coef3[i] <- summary(test.model.traditional)$coef[3, 1]
+#   spatial.coef3[i] <- summary(test.model.spatial)$coef[3, 1]
+#   
+#   traditional.coef4[i] <- summary(test.model.traditional)$coef[4, 1]
+#   spatial.coef4[i] <- summary(test.model.spatial)$coef[4, 1]
+  
+#   traditional.coef5[i] <- summary(test.model.traditional)$coef[5, 1]
+#   spatial.coef5[i] <- summary(test.model.spatial)$coef[5, 1]
+  
 }
 
-plot(z.vals, spatial.diff, col="green", ylim=c(-10, 10))
-lines(z.vals, traditional.diff, col="blue")
 
-plot(z.vals, spatial.coef, col="green", ylim=c(-10, 10))
-lines(z.vals, traditional.coef, col="blue")
-
-plot(z.vals, true.treatment)
+plot(z.vals, true.treatment, main='true')
 
 
+plot(z.vals, spatial.diff.a, col="green", type="l", 
+     ylim=c(-10, 10), main='diff a')
+lines(z.vals, traditional.diff.a, col="blue")
+
+plot(z.vals, spatial.coef.a[, '(Intercept)'], col="green", type="l", 
+     ylim=c(0, 100), main='intercept a')
+lines(z.vals, traditional.coef.a[, '(Intercept)'], col="blue")
+
+plot(z.vals, spatial.coef.a[, 'treatment.status'], col="green", type="l", 
+     ylim=c(-10, 10), main='treatment.status a')
+lines(z.vals, traditional.coef.a[, 'treatment.status'], col="blue")
+
+plot(z.vals, spatial.coef.a[, 'var1'], col="green", type="l", 
+     ylim=c(0, 50), main='var1 a')
+lines(z.vals, traditional.coef.a[, 'var1'], col="blue")
+
+plot(z.vals, spatial.coef.a[, 'var2'], col="green", type="l", 
+     ylim=c(0, 50), main='var2 a')
+lines(z.vals, traditional.coef.a[, 'var2'], col="blue")
+
+plot(z.vals, spatial.coef.a[, 'var3'], col="green", type="l", 
+     ylim=c(0, 50), main='var3 a')
+lines(z.vals, traditional.coef.a[, 'var3'], col="blue")
+
+
+
+
+
+plot(z.vals, spatial.diff.b, col="green", type="l", 
+     ylim=c(-10, 10), main='diff b')
+lines(z.vals, traditional.diff.b, col="blue")
+
+plot(z.vals, spatial.coef.b[, 'treatment.status'], col="green", type="l", 
+     ylim=c(-10, 10), main='treatment.status b')
+lines(z.vals, traditional.coef.b[, 'treatment.status'], col="blue")
+
+plot(z.vals, spatial.coef.b[, 'var1'], col="green", type="l", 
+     ylim=c(0, 50), main='var1 b')
+lines(z.vals, traditional.coef.b[, 'var1'], col="blue")
+
+plot(z.vals, spatial.coef.b[, 'var2'], col="green", type="l", 
+     ylim=c(0, 50), main='var2 b')
+lines(z.vals, traditional.coef.b[, 'var2'], col="blue")
+
+plot(z.vals, spatial.coef.b[, 'var3'], col="green", type="l", 
+     ylim=c(0, 50), main='var3 b')
+lines(z.vals, traditional.coef.b[, 'var3'], col="blue")
 
 
 
