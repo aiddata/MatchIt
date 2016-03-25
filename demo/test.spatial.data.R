@@ -420,6 +420,11 @@ plot(z.vals, spatial.diff.a, col="green", type="l",
      ylim=c(-10, 10), main='diff a')
 lines(z.vals, traditional.diff.a, col="blue")
 
+legend(0, 10, 
+       c('traditional', 'spatial'), 
+       lty=c(1, 1), 
+       lwd=c(2.5, 2.5),
+       col=c('blue', 'green')) 
 
 
 plot(x=z.vals, type="n", ylim=c(-10, 100), main='Coef a', ylab="", xlab="z")
@@ -440,16 +445,15 @@ lines(z.vals, traditional.coef.a[, 'var3'], col="purple", lty=2, lwd=1)
 lines(z.vals, spatial.coef.a[, 'var3'], col="purple", lty=1, lwd=1)
 
 legend(0, 100, 
-       c('intercept traditional', 'intercept spatial', 
-         'treatment.status traditional', 'treatment.status spatial', 
-         'var1 traditional', 'var1 spatial', 
-         'var2 traditional', 'var2 spatial', 
-         'var3 traditional', 'var3 spatial'), 
-       lty=c(2, 1, 2, 1, 2, 1, 2, 1, 2, 1), 
-       lwd=c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), 
-       col=c("black", "black", "red", "red", "green", "green", 
-             "blue", "blue", "purple", "purple")) 
+       c('traditional', 'spatial'), 
+       lty=c(2, 1), 
+       lwd=c(2.5)) 
 
+legend(0, 85, 
+       c('intercept', 'treatment.status', 'var1', 'var2', 'var3'), 
+       lty=c(1, 1, 1, 1, 1), 
+       lwd=c(2.5), 
+       col=c("black", "red", "green", "blue", "purple")) 
 
 
 
@@ -468,14 +472,15 @@ lines(z.vals, traditional.coef.b[, 'var3'], col="purple", lty=2, lwd=1)
 lines(z.vals, spatial.coef.b[, 'var3'], col="purple", lty=1, lwd=1)
 
 legend(0, 100, 
-       c('treatment.status traditional', 'treatment.status spatial', 
-         'var1 traditional', 'var1 spatial', 
-         'var2 traditional', 'var2 spatial', 
-         'var3 traditional', 'var3 spatial'), 
-       lty=c(2, 1, 2, 1, 2, 1, 2, 1), 
-       lwd=c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), 
-       col=c("red", "red", "green", "green", 
-             "blue", "blue", "purple", "purple")) 
+       c('traditional', 'spatial'), 
+       lty=c(2, 1), 
+       lwd=c(2.5)) 
+
+legend(0, 85, 
+       c('treatment.status', 'var1', 'var2', 'var3'), 
+       lty=c(1, 1, 1, 1, 1), 
+       lwd=c(2.5), 
+       col=c("red", "green", "blue", "purple")) 
 
 
 
