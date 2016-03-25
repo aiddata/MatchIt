@@ -337,22 +337,6 @@ traditional.diff.b <- c()
 spatial.diff.b <- c()
 
 
-
-# traditional.coef1 <- c()
-# spatial.coef1 <- c()
-# 
-# traditional.coef2 <- c()
-# spatial.coef2 <- c()
-# 
-# traditional.coef3 <- c()
-# spatial.coef3 <- c()
-# 
-# traditional.coef4 <- c()
-# spatial.coef4 <- c()
-# 
-# traditional.coef5 <- c()
-# spatial.coef5 <- c()
-
 true.treatment <- c()
 
 z.vals <- c(seq(0,500,1))
@@ -414,86 +398,84 @@ for (i in 1:length(z.vals)) {
     spatial.coef.b <- summary(test.model.spatial.b)$coef[, 1]
     
   } else {
-    traditional.coef.a <- rbind(traditional.coef.a, summary(test.model.traditional.a)$coef[, 1])
-    spatial.coef.a <- rbind(spatial.coef.a, summary(test.model.spatial.a)$coef[, 1])
+    traditional.coef.a <- rbind(traditional.coef.a, 
+                                summary(test.model.traditional.a)$coef[, 1])
+    spatial.coef.a <- rbind(spatial.coef.a, 
+                            summary(test.model.spatial.a)$coef[, 1])
     
-    traditional.coef.b <- rbind(traditional.coef.b, summary(test.model.traditional.b)$coef[, 1])
-    spatial.coef.b <- rbind(spatial.coef.b, summary(test.model.spatial.b)$coef[, 1])
+    traditional.coef.b <- rbind(traditional.coef.b, 
+                                summary(test.model.traditional.b)$coef[, 1])
+    spatial.coef.b <- rbind(spatial.coef.b, 
+                            summary(test.model.spatial.b)$coef[, 1])
   }
 
-  
-#   traditional.coef1[i] <- summary(test.model.traditional)$coef[1, 1]
-#   spatial.coef1[i] <- summary(test.model.spatial)$coef[1, 1]
-#   
-#   traditional.coef2[i] <- summary(test.model.traditional)$coef[2, 1]
-#   spatial.coef2[i] <- summary(test.model.spatial)$coef[2, 1]
-# 
-#   traditional.coef3[i] <- summary(test.model.traditional)$coef[3, 1]
-#   spatial.coef3[i] <- summary(test.model.spatial)$coef[3, 1]
-#   
-#   traditional.coef4[i] <- summary(test.model.traditional)$coef[4, 1]
-#   spatial.coef4[i] <- summary(test.model.spatial)$coef[4, 1]
-  
-#   traditional.coef5[i] <- summary(test.model.traditional)$coef[5, 1]
-#   spatial.coef5[i] <- summary(test.model.spatial)$coef[5, 1]
-  
 }
 
 
 plot(z.vals, true.treatment, main='true')
 
 
+
 plot(z.vals, spatial.diff.a, col="green", type="l", 
      ylim=c(-10, 10), main='diff a')
 lines(z.vals, traditional.diff.a, col="blue")
 
-plot(z.vals, spatial.coef.a[, '(Intercept)'], col="green", type="l", 
-     ylim=c(0, 100), main='intercept a')
-lines(z.vals, traditional.coef.a[, '(Intercept)'], col="blue")
-
-plot(z.vals, spatial.coef.a[, 'treatment.status'], col="green", type="l", 
-     ylim=c(-10, 10), main='treatment.status a')
-lines(z.vals, traditional.coef.a[, 'treatment.status'], col="blue")
-
-plot(z.vals, spatial.coef.a[, 'var1'], col="green", type="l", 
-     ylim=c(0, 50), main='var1 a')
-lines(z.vals, traditional.coef.a[, 'var1'], col="blue")
-
-plot(z.vals, spatial.coef.a[, 'var2'], col="green", type="l", 
-     ylim=c(0, 50), main='var2 a')
-lines(z.vals, traditional.coef.a[, 'var2'], col="blue")
-
-plot(z.vals, spatial.coef.a[, 'var3'], col="green", type="l", 
-     ylim=c(0, 50), main='var3 a')
-lines(z.vals, traditional.coef.a[, 'var3'], col="blue")
 
 
+plot(x=z.vals, type="n", ylim=c(-10, 100), main='Coef a', ylab="", xlab="z")
 
+lines(z.vals, traditional.coef.a[, '(Intercept)'], col="black", lty=2, lwd=1)
+lines(z.vals, spatial.coef.a[, '(Intercept)'], col="black", lty=1, lwd=1)
 
+lines(z.vals, traditional.coef.a[, 'treatment.status'], col="red", lty=2, lwd=1)
+lines(z.vals, spatial.coef.a[, 'treatment.status'], col="red", lty=1, lwd=1)
 
-plot(z.vals, spatial.diff.b, col="green", type="l", 
-     ylim=c(-10, 10), main='diff b')
-lines(z.vals, traditional.diff.b, col="blue")
+lines(z.vals, traditional.coef.a[, 'var1'], col="green", lty=2, lwd=1)
+lines(z.vals, spatial.coef.a[, 'var1'], col="green", lty=1, lwd=1)
 
-plot(z.vals, spatial.coef.b[, 'treatment.status'], col="green", type="l", 
-     ylim=c(-10, 10), main='treatment.status b')
-lines(z.vals, traditional.coef.b[, 'treatment.status'], col="blue")
+lines(z.vals, traditional.coef.a[, 'var2'], col="blue", lty=2, lwd=1)
+lines(z.vals, spatial.coef.a[, 'var2'], col="blue", lty=1, lwd=1)
 
-plot(z.vals, spatial.coef.b[, 'var1'], col="green", type="l", 
-     ylim=c(0, 50), main='var1 b')
-lines(z.vals, traditional.coef.b[, 'var1'], col="blue")
+lines(z.vals, traditional.coef.a[, 'var3'], col="purple", lty=2, lwd=1)
+lines(z.vals, spatial.coef.a[, 'var3'], col="purple", lty=1, lwd=1)
 
-plot(z.vals, spatial.coef.b[, 'var2'], col="green", type="l", 
-     ylim=c(0, 50), main='var2 b')
-lines(z.vals, traditional.coef.b[, 'var2'], col="blue")
-
-plot(z.vals, spatial.coef.b[, 'var3'], col="green", type="l", 
-     ylim=c(0, 50), main='var3 b')
-lines(z.vals, traditional.coef.b[, 'var3'], col="blue")
+legend(0, 100, 
+       c('intercept traditional', 'intercept spatial', 
+         'treatment.status traditional', 'treatment.status spatial', 
+         'var1 traditional', 'var1 spatial', 
+         'var2 traditional', 'var2 spatial', 
+         'var3 traditional', 'var3 spatial'), 
+       lty=c(2, 1, 2, 1, 2, 1, 2, 1, 2, 1), 
+       lwd=c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), 
+       col=c("black", "black", "red", "red", "green", "green", 
+             "blue", "blue", "purple", "purple")) 
 
 
 
 
+plot(x=z.vals, type="n", ylim=c(-10, 100), main='Coef b', ylab="", xlab="z")
+
+lines(z.vals, traditional.coef.b[, 'treatment.status'], col="red", lty=2, lwd=1)
+lines(z.vals, spatial.coef.b[, 'treatment.status'], col="red", lty=1, lwd=1)
+
+lines(z.vals, traditional.coef.b[, 'var1'], col="green", lty=2, lwd=1)
+lines(z.vals, spatial.coef.b[, 'var1'], col="green", lty=1, lwd=1)
+
+lines(z.vals, traditional.coef.b[, 'var2'], col="blue", lty=2, lwd=1)
+lines(z.vals, spatial.coef.b[, 'var2'], col="blue", lty=1, lwd=1)
+
+lines(z.vals, traditional.coef.b[, 'var3'], col="purple", lty=2, lwd=1)
+lines(z.vals, spatial.coef.b[, 'var3'], col="purple", lty=1, lwd=1)
+
+legend(0, 100, 
+       c('treatment.status traditional', 'treatment.status spatial', 
+         'var1 traditional', 'var1 spatial', 
+         'var2 traditional', 'var2 spatial', 
+         'var3 traditional', 'var3 spatial'), 
+       lty=c(2, 1, 2, 1, 2, 1, 2, 1), 
+       lwd=c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), 
+       col=c("red", "red", "green", "green", 
+             "blue", "blue", "purple", "purple")) 
 
 
 
