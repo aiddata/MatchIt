@@ -219,27 +219,27 @@ for (i in 1:nrandom) {
 # ====================================
 
 
-m1.match.distances <- c()
-
-for (i in 1:length(m1.out$match.matrix)) {
-  control.id <- as.numeric(labels(m1.out$match.matrix)[[1]][i])
-  treated.id <- m1.out$match.matrix[i]
-
-  if (!is.na(treated.id)) {
-    treated.id <- as.numeric(treated.id)
-
-    control.coords <- spdf[control.id, ]@coords
-    treated.coords <- spdf[treated.id, ]@coords
-
-    m1.match.distances[i] <- spDists(control.coords, treated.coords,
-                                     longlat=FALSE, segments=FALSE,
-                                     diagonal=FALSE)
-  }
-}
-
-m1.autocorrelation.match.count <- length(
-  m1.match.distances[!is.na(m1.match.distances) &
-                     m1.match.distances < (correlogram.xintercept/110)])
+# m1.match.distances <- c()
+# 
+# for (i in 1:length(m1.out$match.matrix)) {
+#   control.id <- as.numeric(labels(m1.out$match.matrix)[[1]][i])
+#   treated.id <- m1.out$match.matrix[i]
+# 
+#   if (!is.na(treated.id)) {
+#     treated.id <- as.numeric(treated.id)
+# 
+#     control.coords <- spdf[control.id, ]@coords
+#     treated.coords <- spdf[treated.id, ]@coords
+# 
+#     m1.match.distances[i] <- spDists(control.coords, treated.coords,
+#                                      longlat=FALSE, segments=FALSE,
+#                                      diagonal=FALSE)
+#   }
+# }
+# 
+# m1.autocorrelation.match.count <- length(
+#   m1.match.distances[!is.na(m1.match.distances) &
+#                      m1.match.distances < (correlogram.xintercept/110)])
 
 
 # -----------------------------------------------------------------------------
@@ -258,32 +258,32 @@ m2.out <- matchit(treatment.status ~ var1 + var2 + var3, data=spdf,
 
 # -------------------------------------
 
-m2.match.distances <- c()
-
-for (i in 1:length(m2.out$match.matrix)) {
-  control.id <- as.numeric(labels(m2.out$match.matrix)[[1]][i])
-  treated.id <- m2.out$match.matrix[i]
-
-  if (!is.na(treated.id)) {
-    treated.id <- as.numeric(treated.id)
-
-    control.coords <- spdf[control.id, ]@coords
-    treated.coords <- spdf[treated.id, ]@coords
-
-    m2.match.distances[i] <- spDists(control.coords, treated.coords,
-                                     longlat=FALSE, segments=FALSE,
-                                     diagonal=FALSE)
-  }
-}
-
-m2.autocorrelation.match.count <- length(
-  m2.match.distances[!is.na(m2.match.distances) &
-                     m2.match.distances < (correlogram.xintercept/110)])
+# m2.match.distances <- c()
+# 
+# for (i in 1:length(m2.out$match.matrix)) {
+#   control.id <- as.numeric(labels(m2.out$match.matrix)[[1]][i])
+#   treated.id <- m2.out$match.matrix[i]
+# 
+#   if (!is.na(treated.id)) {
+#     treated.id <- as.numeric(treated.id)
+# 
+#     control.coords <- spdf[control.id, ]@coords
+#     treated.coords <- spdf[treated.id, ]@coords
+# 
+#     m2.match.distances[i] <- spDists(control.coords, treated.coords,
+#                                      longlat=FALSE, segments=FALSE,
+#                                      diagonal=FALSE)
+#   }
+# }
+# 
+# m2.autocorrelation.match.count <- length(
+#   m2.match.distances[!is.na(m2.match.distances) &
+#                      m2.match.distances < (correlogram.xintercept/110)])
 
 
 # -----------------------------------------------------------------------------
 
-
+###
 #
 # matchit.traditional.data <- match.data(m1.out)
 # tmp.traditional.pairs <- rep(0, length(matchit.traditional.data))
@@ -327,7 +327,8 @@ m2.autocorrelation.match.count <- length(
 # }
 #
 # matchit.spatial.data$pairs <- tmp.spatial.pairs
-
+#
+###
 
 
 traditional.diff.a <- c()
@@ -341,16 +342,26 @@ true.treatment <- c()
 
 z.vals <- c(seq(0,500,1))
 
+spdf$spillover.var <- spdf$spillover.weights
 for (i in 1:length(z.vals)) {
 
   z <- z.vals[i]
-
+  
   spdf$treatment.effect <- 1 * spdf$treatment.status
+  
+  spdf$z <- z
+  spdf$spillover.t1 <- tmp.spillover.t1
+  # spdf$spillover.t2 <- tmp.spillover.t2
+  # spdf$spillover.var <- z * tmp.spillover.t1 / nrandom 
   spdf$spillover <- z * tmp.spillover.t1 * tmp.spillover.t2
+  # spdf$spillover.var <- mean(spdf$spillover) 
+  # spdf$spillover.var <- tmp.spillover.t2
+  # spdf$spillover.var <- sum(spdf$spillover.weights) 
+  
   spdf$ancillary <- tmp.var.avg
   spdf$error <- 0
   spdf$intercept <- 0
-
+  
   spdf$outcome <- spdf$treatment.effect + spdf$spillover +
     spdf$ancillary + spdf$error + spdf$intercept
 
@@ -365,14 +376,14 @@ for (i in 1:length(z.vals)) {
 
   # spplot(spdf, zcol=c('outcome'), main='outcome')
 
-  test.model.traditional.a <- lm(outcome ~ treatment.status + var1 + var2 + var3,
+  test.model.traditional.a <- lm(outcome ~ treatment.status + var1 + var2 + var3 + spillover.var,
                                  data=match.data(m1.out))
-  test.model.spatial.a <- lm(outcome ~ treatment.status + var1 + var2 + var3,
+  test.model.spatial.a <- lm(outcome ~ treatment.status + var1 + var2 + var3 + spillover.var,
                              data=match.data(m2.out))
   
-  test.model.traditional.b <- lm(outcome ~ 0 + treatment.status + var1 + var2 + var3,
+  test.model.traditional.b <- lm(outcome ~ 0 + treatment.status + var1 + var2 + var3 + spillover.var,
                                data=match.data(m1.out))
-  test.model.spatial.b <- lm(outcome ~ 0 + treatment.status + var1 + var2 + var3,
+  test.model.spatial.b <- lm(outcome ~ 0 + treatment.status + var1 + var2 + var3 + spillover.var,
                            data=match.data(m2.out))
 
 
@@ -427,7 +438,20 @@ legend(0, 10,
        col=c('blue', 'green')) 
 
 
-plot(x=z.vals, type="n", ylim=c(-10, 100), main='Coef a', ylab="", xlab="z")
+
+plot(z.vals, spatial.diff.b, col="green", type="l", 
+     ylim=c(-10, 10), main='diff b')
+lines(z.vals, traditional.diff.b, col="blue")
+
+legend(0, 10, 
+       c('traditional', 'spatial'), 
+       lty=c(1, 1), 
+       lwd=c(2.5, 2.5),
+       col=c('blue', 'green')) 
+
+
+
+plot(x=z.vals, type="n", ylim=c(-10, 1000), main='Coef a', ylab="", xlab="z")
 
 lines(z.vals, traditional.coef.a[, '(Intercept)'], col="black", lty=2, lwd=1)
 lines(z.vals, spatial.coef.a[, '(Intercept)'], col="black", lty=1, lwd=1)
@@ -444,20 +468,23 @@ lines(z.vals, spatial.coef.a[, 'var2'], col="blue", lty=1, lwd=1)
 lines(z.vals, traditional.coef.a[, 'var3'], col="purple", lty=2, lwd=1)
 lines(z.vals, spatial.coef.a[, 'var3'], col="purple", lty=1, lwd=1)
 
-legend(0, 100, 
-       c('traditional', 'spatial'), 
-       lty=c(2, 1), 
-       lwd=c(2.5)) 
+lines(z.vals, traditional.coef.a[, 'spillover.var'], col="brown", lty=2, lwd=1)
+lines(z.vals, spatial.coef.a[, 'spillover.var'], col="brown", lty=1, lwd=1)
 
-legend(0, 85, 
-       c('intercept', 'treatment.status', 'var1', 'var2', 'var3'), 
-       lty=c(1, 1, 1, 1, 1), 
-       lwd=c(2.5), 
-       col=c("black", "red", "green", "blue", "purple")) 
+# legend(0, 25, 
+#        c('traditional', 'spatial'), 
+#        lty=c(2, 1), 
+#        lwd=c(2.5)) 
+# 
+# legend(0, 20, 
+#        c('intercept', 'treatment.status', 'var1', 'var2', 'var3', 'spillover.var'), 
+#        lty=c(1), 
+#        lwd=c(2.5), 
+#        col=c("black", "red", "green", "blue", "purple", "brown")) 
 
 
 
-plot(x=z.vals, type="n", ylim=c(-10, 100), main='Coef b', ylab="", xlab="z")
+plot(x=z.vals, type="n", ylim=c(-10, 1000), main='Coef b', ylab="", xlab="z")
 
 lines(z.vals, traditional.coef.b[, 'treatment.status'], col="red", lty=2, lwd=1)
 lines(z.vals, spatial.coef.b[, 'treatment.status'], col="red", lty=1, lwd=1)
@@ -471,16 +498,19 @@ lines(z.vals, spatial.coef.b[, 'var2'], col="blue", lty=1, lwd=1)
 lines(z.vals, traditional.coef.b[, 'var3'], col="purple", lty=2, lwd=1)
 lines(z.vals, spatial.coef.b[, 'var3'], col="purple", lty=1, lwd=1)
 
-legend(0, 100, 
-       c('traditional', 'spatial'), 
-       lty=c(2, 1), 
-       lwd=c(2.5)) 
+lines(z.vals, traditional.coef.b[, 'spillover.var'], col="brown", lty=2, lwd=1)
+lines(z.vals, spatial.coef.b[, 'spillover.var'], col="brown", lty=1, lwd=1)
 
-legend(0, 85, 
-       c('treatment.status', 'var1', 'var2', 'var3'), 
-       lty=c(1, 1, 1, 1, 1), 
-       lwd=c(2.5), 
-       col=c("red", "green", "blue", "purple")) 
+# legend(0, 25, 
+#        c('traditional', 'spatial'), 
+#        lty=c(2, 1), 
+#        lwd=c(2.5)) 
+# 
+# legend(0, 20, 
+#        c('treatment.status', 'var1', 'var2', 'var3', 'spillover.var'), 
+#        lty=c(1), 
+#        lwd=c(2.5), 
+#        col=c("red", "green", "blue", "purple", "brown")) 
 
 
 
