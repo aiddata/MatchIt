@@ -5,7 +5,15 @@ distance.decay.threshold <- function(x, thresh) {
   if (x < thresh) {
     NA
   } else {
-    1*x
+    1
+  }
+}
+
+distance.decay.threshold.linear <- function(x, thresh) {
+  if (x < thresh) {
+    NA
+  } else {
+    x
   }
 }
 

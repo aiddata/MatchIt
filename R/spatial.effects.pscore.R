@@ -31,7 +31,7 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
 
   # Calculate the geographic distances between points
   for (i in 1:length(treated)) {
-    geog.dist.matrix[i,] <- spDistsN1(untreated, treated[i,])
+    geog.dist.matrix[i,] <- spDistsN1(untreated, treated[i,], longlat=TRUE)
   }
 
   # Permute the geographic distances by the spatial distance-decay function.
@@ -69,7 +69,7 @@ spatial.effects.pscore.itert <- function(spatial.threshold,
   pair.candidates@data$unstd_deviation <- deviation
 
   # Calculate the geographic distances between points
-  geog.dist.vector <- spDistsN1(pair.candidates, treated.unit)
+  geog.dist.vector <- spDistsN1(pair.candidates, treated.unit, longlat=TRUE)
 
   # Permute the geographic distances by the spatial distance-decay function.
   spatial.weights <- run.distance.decay(thresh=spatial.threshold,
