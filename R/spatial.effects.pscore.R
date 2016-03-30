@@ -10,24 +10,26 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
                                            distance, caliper, treat) {
 
   # Select the treated being analyzed to calculate distance penalties from
-  # treated_unit <- spatial.data[rownames(spatial.data@data)==itert,]
+  # treated_unit <- spatial.data[rownames(spatial.data@data)==t.iter.label,]
 
   spatial.data@data$distance <- distance
   treated <- spatial.data[names(distance[treat == 1]),]
   untreated <- spatial.data[names(distance[treat == 0]),]
 
-  trt.matrix <- matrix(treated@data$distance, length(treated),
-                       length(untreated), byrow=FALSE)
+  trt.matrix <- matrix(treated@data$distance, nrow=length(treated),
+                       ncol=length(untreated), byrow=FALSE)
 
-  untrt.matrix <- matrix(untreated@data$distance, length(treated),
-                         length(untreated), byrow=TRUE)
+  untrt.matrix <- matrix(untreated@data$distance, nrow=length(treated),
+                         ncol=length(untreated), byrow=TRUE)
 
   # raw PSM deviation matrix
-  psm.dev.matrix <- abs(trt.matrix - untrt.matrix)
+  # psm.dev.matrix <- abs(trt.matrix - untrt.matrix)
 
-  # Make an empty copy of the matrix to fill with geographic distances
-  geog.dist.matrix <- psm.dev.matrix
-  geog.dist.matrix[geog.dist.matrix != 0] <- NA
+  # # Make an empty copy of the matrix to fill with geographic distances
+  # geog.dist.matrix <- psm.dev.matrix
+  # geog.dist.matrix[geog.dist.matrix != 0] <- NA
+
+  geog.dist.matrix <- matrix(NA, nrow=length(treated), ncol=length(untreated))
 
   # Calculate the geographic distances between points
   for (i in 1:length(treated)) {
@@ -39,10 +41,14 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
                                         dist=geog.dist.matrix,
                                         func=spatial.decay.function)
 
-  # calculate the weighted P-scores
-  spatial.weighted.pscores <- spatial.weights * psm.dev.matrix
+  # # calculate the weighted P-scores
+  # spatial.weighted.pscores <- spatial.weights * psm.dev.matrix
 
-  return(as.vector(spatial.weighted.pscores))
+  # return(as.vector(spatial.weighted.pscores))
+
+
+  return(c(rowMeans(spatial.weights * trt.matrix),
+           colMeans(spatial.weights * untrt.matrix)))
 
 }
 
@@ -57,12 +63,13 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
 # function. Further, a lower-bounds threshold is applied to mitigate the
 # potential for spillovers in treatments.
 
-spatial.effects.pscore.itert <- function(spatial.threshold,
-                                         spatial.decay.function, spatial.data,
-                                         deviation, itert) {
+spatial.effects.pscore.deviation <- function(spatial.threshold,
+                                             spatial.decay.function,
+                                             spatial.data,
+                                             deviation, t.iter.label) {
 
   # Select the treated being analyzed to calculate distance penalties from
-  treated.unit <- spatial.data[rownames(spatial.data@data) == itert,]
+  treated.unit <- spatial.data[rownames(spatial.data@data) == t.iter.label, ]
 
   # Identify candidates to match with
   pair.candidates <- spatial.data[names(deviation),]

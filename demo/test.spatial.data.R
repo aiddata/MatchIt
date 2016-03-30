@@ -21,7 +21,7 @@ nrandom <- 2000
 theta <- 1
 
 # variogram model range (larger = coarser autocorrelation) and psill
-var.vrange <- 1000
+var.vrange <- 2000
 var.psill <- 1
 
 # numner of covariates
@@ -153,7 +153,7 @@ plot(vgm1)
 
 # traditional, non-spatial matchit
 m1.out <- matchit(treatment.status ~ var1, data=spdf@data,
-                  method="nearest", distance="logit", caliper=0)
+                  method="nearest", distance="logit", caliper=0.25)
 
 
 # ====================================
@@ -291,17 +291,15 @@ m1.autocorrelation.match.count <- length(
 #                      threshold = 0.05)
 
 spatial.opts <- list(decay.model = "threshold",
-                     threshold = correlogram.xintercept)
+                     threshold = 0)#correlogram.xintercept)
 
 
 detach("package:MatchIt", unload=TRUE)
 load_all("~/git/matchit/R")
-# library(devtools)
-# install_github("itpir/matchit")
 library(MatchIt)
 
 m2.out <- matchit(treatment.status ~ var1, data=spdf,
-                  method = "nearest", distance = "logit", caliper=0,
+                  method = "nearest", distance = "logit", caliper=0.25,
                   spatial.options=spatial.opts)
 
 # -------------------------------------
@@ -327,6 +325,14 @@ m2.autocorrelation.match.count <- length(
   m2.match.distances[!is.na(m2.match.distances) &
                      m2.match.distances < correlogram.xintercept])
 
+
+
+m1.out
+m2.out
+mean(m1.match.distances, na.rm=T)
+mean(m2.match.distances, na.rm=T)
+hist(m1.match.distances)
+hist(m2.match.distances)
 
 # -----------------------------------------------------------------------------
 

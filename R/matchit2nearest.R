@@ -146,15 +146,16 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # ---------------------------------------------------------------------------
   # get matrix for caliper
   if (is.spatial == TRUE && !is.null(distance) && caliper != 0) {
-    caliper.matrix <- spatial.effects.pscore.caliper(
+    caliper.vector <- spatial.effects.pscore.caliper(
                         spatial.threshold, spatial.decay.function,
                         spatial.data, distance[in.sample == 1], caliper, treat)
   } else {
-    caliper.matrix <- distance[in.sample == 1]
+    caliper.vector <- distance[in.sample == 1]
   }
 
   # caliper for matching (is equal to 0 if caliper matching not done)
-  sd.cal <- caliper * sqrt(var(caliper.matrix, na.rm=TRUE))
+  sd.cal <- caliper * sqrt(var(caliper.vector, na.rm=TRUE))
+  # print(sd.cal)
 
   # ---------------------------------------------------------------------------
 
@@ -277,13 +278,13 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     }
 
     # Need to add a check in case there are not any eligible matches left...
-    if (replace & r != 1) {
-      if (sum(!c.labels %in% match.matrix[t.iter.label, (1:r-1)] &
+    if (replace && r != 1) {
+      if (sum(!(c.labels %in% match.matrix[t.iter.label, (1:r-1)]) &
               c.matched2 == 0) == 0) {
         deviation <- NULL
         min.dev <- NA
       } else {
-        deviation <- abs(c.pscores[!c.labels %in% match.matrix[t.iter.label, (1:r-1)] &
+        deviation <- abs(c.pscores[!(c.labels %in% match.matrix[t.iter.label, (1:r-1)]) &
                             c.matched2 == 0] - t.iter.pscore)
       }
     }
@@ -297,39 +298,32 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     }
 
 
-    # ???
-    # DONT REDO SPATIAL DEV EACH TIME
-    # RUN IT ONCE AND FILTER OUT NA VALS
-    # THEN USE IT AS LOOKUP EACH TIME FOR SPATIAL WEIGHTS
-
     # -------------------------------------------------------------------------
     # Spatial penalties are applied to the deviations calculated here.
     # This should be through a function which draws in the spatial data.
     # The current trick is identifying the relevant data for the current
     # iteration, but that should be doable based on the c.pscores and
     # t.pscores row titles.
+
     if (is.spatial == TRUE && !is.null(deviation)) {
 
-      deviationx <- spatial.effects.pscore.t.iter.label(spatial.threshold,
-                                                spatial.decay.function,
-                                                spatial.data,
-                                                deviation, t.iter.label)
-      print(deviationx)
-      print("!")
+      deviation <- spatial.effects.pscore.deviation(spatial.threshold,
+                                                    spatial.decay.function,
+                                                    spatial.data,
+                                                    deviation, t.iter.label)
     }
     # -------------------------------------------------------------------------
+
+
     if (!is.null(deviation)) {
 
       if (caliper != 0) {
         if (replace & r != 1) {
-          pool <- c.labels[!c.labels %in% match.matrix[t.iter.label, (1:r-1)]
-                          & c.matched2 == 0][deviation <= sd.cal]
+          pool <- c.labels[!c.labels %in% match.matrix[t.iter.label, (1:r-1)] &
+                           c.matched2 == 0][deviation <= sd.cal]
         } else {
           pool <- c.labels[c.matched2 == 0][deviation <= sd.cal]
         }
-
-        # added for spatial?
-        pool <- pool[!is.na(pool)]
 
         if (length(pool) == 0) {
           if (calclosest == FALSE) {
@@ -340,7 +334,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
             } else {
               min.dev.check <- (c.matched2 == 0)
             }
-            min.dev <- c.labels[min.dev.check][min(deviation) == deviation]
+            min.dev <- c.labels[min.dev.check][min(deviation, na.rm=TRUE) == deviation]
 
           }
         } else if (length(pool) == 1) {
@@ -361,7 +355,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         } else {
           min.dev.check <- (c.matched2 == 0)
         }
-        min.dev <- c.labels[min.dev.check][min(deviation) == deviation]
+        min.dev <- c.labels[min.dev.check][min(deviation, na.rm=TRUE) == deviation]
 
       }
 

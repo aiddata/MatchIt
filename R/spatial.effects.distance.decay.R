@@ -3,30 +3,36 @@
 
 distance.decay.threshold <- function(x, thresh) {
   if (x < thresh) {
-    NA
+    y <- NA
   } else {
-    1
+    y <- 1
   }
+  return(y)
 }
 
-distance.decay.threshold.linear <- function(x, thresh) {
+distance.decay.linear.threshold <- function(x, thresh) {
   if (x < thresh) {
-    NA
+    y <- NA
   } else {
-    x
+    y <- x
   }
+  return(y)
 }
 
 distance.decay.spherical <- function(x, thresh) {
-  (3/2) * (x/thresh) - (1/2) * (x/thresh)^3
+  y <- 1 / abs((3/2) * (x/thresh) - (1/2) * (x/thresh)^3)
+
+  return(ifelse(y > 1, 1, y))
 }
 
 distance.decay.gaussian.semivariance <- function(x, thresh) {
-  exp (-(x^2/thresh^2))
+  y <- 1 - exp (-(x^2 / thresh^2))
+  return(y)
 }
 
 distance.decay.exponential.semivariance <- function(x, thresh) {
-  exp(-(x/thresh))
+  y <- 1 - exp(-(x / thresh))
+  return(y)
 }
 
 # # weights values based off of correlogram using distance
