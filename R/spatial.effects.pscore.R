@@ -47,8 +47,8 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
   # return(as.vector(spatial.weighted.pscores))
 
 
-  return(c(rowMeans(spatial.weights * trt.matrix),
-           colMeans(spatial.weights * untrt.matrix)))
+  return(c(rowMeans(spatial.weights * trt.matrix, na.rm=TRUE),
+           colMeans(spatial.weights * untrt.matrix, na.rm=TRUE)))
 
 }
 

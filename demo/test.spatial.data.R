@@ -153,7 +153,8 @@ plot(vgm1)
 
 # traditional, non-spatial matchit
 m1.out <- matchit(treatment.status ~ var1, data=spdf@data,
-                  method="nearest", distance="logit", caliper=0.25)
+                  method="nearest", distance="logit", 
+                  caliper=1, calclosest=FALSE, calrandom=FALSE)
 
 
 # ====================================
@@ -291,7 +292,7 @@ m1.autocorrelation.match.count <- length(
 #                      threshold = 0.05)
 
 spatial.opts <- list(decay.model = "threshold",
-                     threshold = 0)#correlogram.xintercept)
+                     threshold = 4000)#correlogram.xintercept)
 
 
 detach("package:MatchIt", unload=TRUE)
@@ -299,7 +300,8 @@ load_all("~/git/matchit/R")
 library(MatchIt)
 
 m2.out <- matchit(treatment.status ~ var1, data=spdf,
-                  method = "nearest", distance = "logit", caliper=0.25,
+                  method = "nearest", distance = "logit", 
+                  caliper=1, calclosest=FALSE, calrandom=FALSE,
                   spatial.options=spatial.opts)
 
 # -------------------------------------

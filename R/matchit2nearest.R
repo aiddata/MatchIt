@@ -1,7 +1,7 @@
 matchit2nearest <-  function(treat, X, data, distance, discarded,
                              ratio=1, replace=FALSE, m.order="largest",
-                             caliper=0, calclosest=FALSE,
-                             mahvars=NULL, exact=NULL,
+                             caliper=0, calclosest=FALSE, calrandom=FALSE,
+                             mahvars=NULL, exact=NULL, static.selection=FALSE,
                              subclass=NULL, verbose=FALSE, sub.by=NULL,
                              is.full.mahalanobis, ...){
 
@@ -58,6 +58,12 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     warning("calclosest=", calclosest, " is invalid; used calclosest=FALSE
             instead", call.=FALSE)
     calclosest <- FALSE
+  }
+  # calrandom
+  if (!(typeof(calrandom) == "logical")) {
+    warning("calrandom=", calrandom, " is invalid; used calrandom=FALSE instead",
+            call.=FALSE)
+    calrandom <- FALSE
   }
   # mahvars & caliper
   if (!is.null(mahvars) & caliper[1] == 0) {
@@ -143,6 +149,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # starting match ratio
   r <- 1
 
+
   # ---------------------------------------------------------------------------
   # get matrix for caliper
   if (is.spatial == TRUE && !is.null(distance) && caliper != 0) {
@@ -155,8 +162,10 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
   # caliper for matching (is equal to 0 if caliper matching not done)
   sd.cal <- caliper * sqrt(var(caliper.vector, na.rm=TRUE))
-  # print(sd.cal)
 
+  # used when caliper == 0 to track # of treated units which had no eligible
+  # control pool due to caliper
+  empty.c.pool <- 0
   # ---------------------------------------------------------------------------
 
   # Var-covar matrix for Mahalanobis (currently set for full sample)
@@ -215,10 +224,13 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         cat(10*which(trseq == i), "%...", sep="")
       }
     }
-    # a counter
+
+    # tmp copy of c.matched used for iteration
     c.matched2 <- c.matched
+
     # in cases there is no replacement and all controls have been used up
     if (!(0 %in% c.matched2)) {
+      warnings("controls used up during r=",r," without replacements enabled")
       match.matrix[match.matrix[, r] == 0 & !is.na(match.matrix[, r]), r] <- NA
       if (r < ratio) {
         match.matrix[, (r+1):ratio] <- NA
@@ -229,6 +241,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     # in case there is replacement, but all units have been used in
     # previous ratios
     if (sum(!is.na(match.matrix[, r])) == 0) {
+      warnings("all replacement units have been used in previous ratios (r=",r,")")
       if (r < ratio) {
         match.matrix[, (r+1):ratio] <- NA
       }
@@ -237,10 +250,11 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
     # check/update which ratio we are on
     if (r != ceiling(i/(tr/ratio))) {
-      r <- r+1
+      r <- r + 1
       t.matched <- match.matrix[, r]
     }
 
+    # get treatment pscore for current iteration
     if (m.order == "largest") {
       t.iter.pscore <- max(t.pscores[t.matched == 0], na.rm=T)
     }
@@ -251,141 +265,166 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
       t.iter.pscore <- sample(t.pscores[t.matched == 0][!is.na(t.pscores[t.matched == 0])], 1)
     }
 
-    # The treatment unit for this iteration, again resolving ties randomly
+    # get the treatment unit label for this iteration, again resolving
+    # ties randomly unless static.selection option is enabled
     t.iter.label <- as.vector(na.omit(t.labels[t.iter.pscore == t.pscores & t.matched == 0]))
+
     if (length(t.iter.label) > 1) {
-      t.iter.label <- sample(t.iter.label, 1)
+      if (static.selection) {
+        t.iter.label <- t.iter.label[1]
+      } else {
+        t.iter.label <- sample(t.iter.label, 1)
+      }
     }
 
+    #--------------------------------------------
 
-    # Calculating all the absolute deviations in propensity scores
-    # Calculate only for those eligible to be matched (c.matched == 0)
-    # this first if statement only applies to replacement ratio
-    # matching, so that each treatment unit is matched to a different
-    # control unit than from the previous round
+    # calculating all the absolute deviations in propensity scores
+    #
+    # - calculate only for those eligible to be matched (c.matched == 0)
+    #
+    # - this first if statement only applies to replacement ratio
+    #   matching, so that each treatment unit is matched to a different
+    #   control unit than from the previous round
+    #
+    # - match number = NA if no units within caliper
 
-    # match number = NA if no units within caliper
 
-
-    # Set things up for exact matching
-    # Make c.matched2 == -2 if it is not an exact match
-    # There might be a more efficient way to do this, but I could not figure
-    # out another way to compare a vector with the matrix
+    # set things up for exact matching
+    # - make c.matched2 == -2 if it is not an exact match
+    # - there might be a more efficient way to do this, but I could not figure
+    #   out another way to compare a vector with the matrix
     if (!is.null(exact)) {
       for (k in 1:dim(exact)[2]) {
         c.matched2[exact[t.iter.label, k] != exact[c.labels, k]] <- -2
       }
     }
 
-    # Need to add a check in case there are not any eligible matches left...
+    # get available control labels
+    c.labels2 <- c.labels[c.matched2 == 0]
+
+    # prevent selecting same control for a treatment multiple times
     if (replace && r != 1) {
-      if (sum(!(c.labels %in% match.matrix[t.iter.label, (1:r-1)]) &
-              c.matched2 == 0) == 0) {
-        deviation <- NULL
-        min.dev <- NA
-      } else {
-        deviation <- abs(c.pscores[!(c.labels %in% match.matrix[t.iter.label, (1:r-1)]) &
-                            c.matched2 == 0] - t.iter.pscore)
-      }
+      c.labels2 <- c.labels2[!(c.labels2 %in% match.matrix[t.iter.label, (1:r-1)])]
     }
-    else {
-      if (sum(c.matched2 == 0) == 0) {
-        deviation <- NULL
-        min.dev <- NA
-      } else {
-        deviation <- abs(c.pscores[c.matched2 == 0] - t.iter.pscore)
-      }
+
+
+    # check if there are any eligible matches left
+    if (length(c.labels2) == 0) {
+      c.deviations <- NULL
+      c.match.good <- NA
+    } else {
+      c.deviations <- abs(c.pscores[c.labels2] - t.iter.pscore)
     }
 
 
     # -------------------------------------------------------------------------
-    # Spatial penalties are applied to the deviations calculated here.
-    # This should be through a function which draws in the spatial data.
-    # The current trick is identifying the relevant data for the current
-    # iteration, but that should be doable based on the c.pscores and
-    # t.pscores row titles.
+    if (is.spatial == TRUE && !is.null(c.deviations)) {
 
-    if (is.spatial == TRUE && !is.null(deviation)) {
-
-      deviation <- spatial.effects.pscore.deviation(spatial.threshold,
+      # spatial penalties are applied to c.deviations
+      c.deviations <- spatial.effects.pscore.deviation(spatial.threshold,
                                                     spatial.decay.function,
                                                     spatial.data,
-                                                    deviation, t.iter.label)
+                                                    c.deviations, t.iter.label)
+
+      # update c.labels2 to remove units with NA deviations and update deviations
+      c.labels2 <- c.labels2[!is.na(c.deviations)]
+      c.deviations <- c.deviations[c.labels2]
+
+      if (length(c.deviations) == 0) {
+        c.deviations <- NULL
+        c.match.good <- NA
+      }
+
     }
     # -------------------------------------------------------------------------
+    # print("!")
+    # print(c.labels2)
 
-
-    if (!is.null(deviation)) {
+    if (!is.null(c.deviations)) {
 
       if (caliper != 0) {
-        if (replace & r != 1) {
-          pool <- c.labels[!c.labels %in% match.matrix[t.iter.label, (1:r-1)] &
-                           c.matched2 == 0][deviation <= sd.cal]
-        } else {
-          pool <- c.labels[c.matched2 == 0][deviation <= sd.cal]
-        }
 
-        if (length(pool) == 0) {
+        # print(c.deviations)
+        # print(sd.cal)
+        # print(c.deviations[c.match.pool])
+
+        c.match.pool <- c.labels2[c.deviations <= sd.cal]
+
+        if (length(c.match.pool) == 0) {
+          empty.c.pool <- empty.c.pool + 1
+
           if (calclosest == FALSE) {
-            min.dev <- NA
+            c.match.good <- NA
           } else {
-            if (replace && r != 1) {
-              min.dev.check <- (!c.labels %in% match.matrix[t.iter.label, (1:r-1)])
-            } else {
-              min.dev.check <- (c.matched2 == 0)
-            }
-            min.dev <- c.labels[min.dev.check][min(deviation, na.rm=TRUE) == deviation]
-
+            c.match.good <- c.labels2[c.deviations == min(c.deviations)]
           }
-        } else if (length(pool) == 1) {
-          min.dev <- pool[1]
+
+        } else if (length(c.match.pool) == 1) {
+          c.match.good <- c.match.pool[1]
+
         } else if (is.null(mahvars)) {
-          min.dev <- sample(pool, 1)
+          if (calrandom) {
+            c.match.good <- sample(c.match.pool, 1)
+          } else {
+            min.eligible.deviation <- min(c.deviations[c.match.pool])
+            # print(min.eligible.deviation)
+            c.match.good <- c.labels2[c.deviations == min.eligible.deviation]
+          }
+
         } else {
           # This has the important vars for the C's within the caliper
-          poolvarsC <- mahvars[pool,,drop=F]
+          poolvarsC <- mahvars[c.match.pool, , drop=F]
           # Sigma is the full group var/covar matrix of Mahalvars
           mahal <- mahalanobis(poolvarsC, mahvars[t.iter.label, ], Sigma)
-          min.dev <- pool[mahal == min(mahal)]
+          c.match.good <- c.match.pool[mahal == min(mahal)]
         }
+
       } else {
-        if (replace && r != 1) {
-          min.dev.check <- (!c.labels %in% match.matrix[t.iter.label, (1:r-1)] &
-                           c.matched2 == 0)
-        } else {
-          min.dev.check <- (c.matched2 == 0)
-        }
-        min.dev <- c.labels[min.dev.check][min(deviation, na.rm=TRUE) == deviation]
+        c.match.good <- c.labels2[c.deviations == min(c.deviations)]
 
       }
 
     }
 
-    # Resolving ties in minimum deviation by random draw
-    if (length(min.dev) > 1) {
-      goodmatch <- sample(min.dev, 1)
+    # print("!")
+    # print(c.match.good)
+
+    # resolving ties in minimum deviation by random draw unless
+    # static.selection option is enabled
+    if (length(c.match.good) > 1) {
+      if (static.selection) {
+        c.match.final <- c.match.good[1]
+      } else {
+        c.match.final <- sample(c.match.good, 1)
+      }
     } else {
-      goodmatch <- min.dev
+      c.match.final <- c.match.good
     }
 
     # Storing which treatment unit has been matched to control, and
     # vice versa
-    t.matched[t.iter.label == t.labels] <- goodmatch
-    c.matched[goodmatch == c.labels] <- t.iter.label
-
-    # instead of the in.sample, we now have an index with dimensions t.size
-    # by number of matches (ratio)
-    match.matrix[which(t.iter.label == t.labels), r] <- goodmatch
+    t.matched[t.labels == t.iter.label] <- c.match.final
+    c.matched[c.labels == c.match.final] <- t.iter.label
 
     # If matching with replacement, set c.matched back to 0 so it can be reused
     if (replace) {
-      c.matched[goodmatch == c.labels] <- 0
+      c.matched[c.labels == c.match.final] <- 0
     }
+
+    # instead of the in.sample, we now have an index with dimensions t.size
+    # by number of matches (ratio)
+    match.matrix[which(t.labels == t.iter.label), r] <- c.match.final
 
   }
   if (verbose){
     cat("Done\n")
   }
+
+  if (empty.c.pool > 0) {
+    warning(empty.c.pool, " treated units had an empty control pool due to caliper.")
+  }
+
 
   x <- as.matrix(match.matrix)
   x[x == -1] <- NA

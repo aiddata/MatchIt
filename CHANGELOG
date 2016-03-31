@@ -1,0 +1,47 @@
+
+
+
+-------------------------------------------------------------------------------
+new features
+
+matchit
+- spatial input option handling and verification
+- spatial nearest neighbor matching
+    + spatial caliper & distance decay functions
+
+
+demo
+- spatial demo
+- spatial proof of concept
+
+
+-------------------------------------------------------------------------------
+general improvements
+
+- improved code styling (spacing, indentation, line length, loop/conditional format)
+- improved various variable names for clarity
+- added comments
+
+-------------------------------------------------------------------------------
+bugs
+
+- FIXED: in nearest matching when using caliper and calclosest and pool == 0, it was including discarded control units in list of possible matches
+
+
+-------------------------------------------------------------------------------
+issues
+
+- forced random sample from pool of eligible controls when using caliper
+
+- no real information is returned if matching fails due to no enough matches
+    + calclosest option description could be improved a bit, maybe with a simple example and someting regarding the implications of using this
+    + added a warning that provides number of treated units not matched due to caliper
+    + add a "calrandom" option to nearest matching (default=FALSE) where when FALSE will use the nearest match and when TRUE will randomly match from the pool (identical to old functionallity)
+
+-------------------------------------------------------------------------------
+todo
+
+- spatial documentation
+- add spatial functionality to remaining matching options
+- improve spatial demo / proof of concept
+
