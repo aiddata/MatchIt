@@ -61,8 +61,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   }
   # calrandom
   if (!(typeof(calrandom) == "logical")) {
-    warning("calrandom=", calrandom, " is invalid; used calrandom=FALSE instead",
-            call.=FALSE)
+    warning("calrandom=", calrandom,
+            " is invalid; used calrandom=FALSE instead", call.=FALSE)
     calrandom <- FALSE
   }
   # mahvars & caliper
@@ -155,7 +155,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   if (is.spatial == TRUE && !is.null(distance) && caliper != 0) {
     caliper.vector <- spatial.effects.pscore.caliper(
                         spatial.threshold, spatial.decay.function,
-                        spatial.data, distance[in.sample == 1], caliper, treat)
+                        spatial.data, distance[in.sample == 1],
+                        caliper, treat)
   } else {
     caliper.vector <- distance[in.sample == 1]
   }
@@ -167,6 +168,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # control pool due to caliper
   empty.c.pool <- 0
   # ---------------------------------------------------------------------------
+
 
   # Var-covar matrix for Mahalanobis (currently set for full sample)
   if (!is.null(mahvars) & !is.full.mahalanobis) {
@@ -190,8 +192,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   }
 
   # Now for exact matching within nearest neighbor.
-  # exact should not equal T for this type of matching--that would get sent to
-  # matchit2exact
+  # exact should not equal T for this type of matching--that would get
+  # sent to matchit2exact
   if (!is.null(exact)) {
     if (!sum(exact %in% names(data)) == length(exact)) {
 	    warning("Exact variables not contained in data. Exact matching not
@@ -241,7 +243,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     # in case there is replacement, but all units have been used in
     # previous ratios
     if (sum(!is.na(match.matrix[, r])) == 0) {
-      warnings("all replacement units have been used in previous ratios (r=",r,")")
+      warnings("all replacement units have been used in previous ratios (r=",
+               r ,")")
       if (r < ratio) {
         match.matrix[, (r+1):ratio] <- NA
       }
@@ -262,13 +265,16 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
       t.iter.pscore <- min(t.pscores[t.matched == 0], na.rm=T)
     }
     if (m.order == "random") {
-      t.iter.pscore <- sample(t.pscores[t.matched == 0][!is.na(t.pscores[t.matched == 0])], 1)
+      t.iter.pscore <- sample(
+        t.pscores[t.matched == 0][!is.na(t.pscores[t.matched == 0])], 1)
     }
 
-    # get the treatment unit label for this iteration, again resolving
-    # ties randomly unless static.selection option is enabled
-    t.iter.label <- as.vector(na.omit(t.labels[t.iter.pscore == t.pscores & t.matched == 0]))
+    # get the treatment unit label for this iteration
+    t.iter.label <- as.vector(na.omit(t.labels[t.iter.pscore == t.pscores &
+                                               t.matched == 0]))
 
+    # resolve treatment selection ties randomly unless static.selection
+    # option is enabled
     if (length(t.iter.label) > 1) {
       if (static.selection) {
         t.iter.label <- t.iter.label[1]
@@ -276,8 +282,6 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
         t.iter.label <- sample(t.iter.label, 1)
       }
     }
-
-    #--------------------------------------------
 
     # calculating all the absolute deviations in propensity scores
     #
@@ -292,8 +296,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
     # set things up for exact matching
     # - make c.matched2 == -2 if it is not an exact match
-    # - there might be a more efficient way to do this, but I could not figure
-    #   out another way to compare a vector with the matrix
+    # - there might be a more efficient way to do this, but I could not
+    #   figure out another way to compare a vector with the matrix
     if (!is.null(exact)) {
       for (k in 1:dim(exact)[2]) {
         c.matched2[exact[t.iter.label, k] != exact[c.labels, k]] <- -2
@@ -305,7 +309,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
     # prevent selecting same control for a treatment multiple times
     if (replace && r != 1) {
-      c.labels2 <- c.labels2[!(c.labels2 %in% match.matrix[t.iter.label, (1:r-1)])]
+      c.labels2 <-
+        c.labels2[!(c.labels2 %in% match.matrix[t.iter.label, (1:r-1)])]
     }
 
 
@@ -327,7 +332,8 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
                                                     spatial.data,
                                                     c.deviations, t.iter.label)
 
-      # update c.labels2 to remove units with NA deviations and update deviations
+      # update c.labels2 to remove units with NA deviations and update
+      # deviations
       c.labels2 <- c.labels2[!is.na(c.deviations)]
       c.deviations <- c.deviations[c.labels2]
 
@@ -338,16 +344,11 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
 
     }
     # -------------------------------------------------------------------------
-    # print("!")
-    # print(c.labels2)
+
 
     if (!is.null(c.deviations)) {
 
       if (caliper != 0) {
-
-        # print(c.deviations)
-        # print(sd.cal)
-        # print(c.deviations[c.match.pool])
 
         c.match.pool <- c.labels2[c.deviations <= sd.cal]
 
@@ -368,7 +369,6 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
             c.match.good <- sample(c.match.pool, 1)
           } else {
             min.eligible.deviation <- min(c.deviations[c.match.pool])
-            # print(min.eligible.deviation)
             c.match.good <- c.labels2[c.deviations == min.eligible.deviation]
           }
 
@@ -386,9 +386,6 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
       }
 
     }
-
-    # print("!")
-    # print(c.match.good)
 
     # resolving ties in minimum deviation by random draw unless
     # static.selection option is enabled
@@ -422,9 +419,9 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   }
 
   if (empty.c.pool > 0) {
-    warning(empty.c.pool, " treated units had an empty control pool due to caliper.")
+    warning(empty.c.pool,
+            " treated units had an empty control pool due to caliper.")
   }
-
 
   x <- as.matrix(match.matrix)
   x[x == -1] <- NA
