@@ -5,7 +5,7 @@ distance.decay.threshold <- function(x, thresh) {
   if (x < thresh) {
     y <- NA
   } else {
-    y <- 1
+    y <- 0
   }
   return(y)
 }
@@ -14,24 +14,27 @@ distance.decay.linear.threshold <- function(x, thresh) {
   if (x < thresh) {
     y <- NA
   } else {
-    y <- x
+    y <- thresh/x
   }
   return(y)
 }
 
 distance.decay.spherical <- function(x, thresh) {
-  y <- 1 / abs((3/2) * (x/thresh) - (1/2) * (x/thresh)^3)
-
-  return(ifelse(y > 1, 1, y))
+  if (x < thresh) {
+    y <- 1 - ((3/2) * (x/thresh) - (1/2) * (x/thresh)^3)
+  } else {
+    y <- 0
+  }
+  return(y)
 }
 
 distance.decay.gaussian.semivariance <- function(x, thresh) {
-  y <- 1 - exp (-(x^2 / thresh^2))
+  y <- exp(-(x^2 / thresh^2))
   return(y)
 }
 
 distance.decay.exponential.semivariance <- function(x, thresh) {
-  y <- 1 - exp(-(x / thresh))
+  y <- exp(-(x / thresh))
   return(y)
 }
 

@@ -47,8 +47,8 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
   # return(as.vector(spatial.weighted.pscores))
 
 
-  return(c(rowMeans(spatial.weights * trt.matrix, na.rm=TRUE),
-           colMeans(spatial.weights * untrt.matrix, na.rm=TRUE)))
+  return(c(rowMeans((spatial.weights + trt.matrix) / 2, na.rm=TRUE),
+           colMeans((spatial.weights + untrt.matrix) / 2, na.rm=TRUE)))
 
 }
 
@@ -84,7 +84,7 @@ spatial.effects.pscore.deviation <- function(spatial.threshold,
                                         func=spatial.decay.function)
 
   # calculate the weighted P-scores
-  spatial.weighted.pscores <- spatial.weights * deviation
+  spatial.weighted.pscores <- (spatial.weights + deviation) / 2
 
   return(spatial.weighted.pscores)
 
