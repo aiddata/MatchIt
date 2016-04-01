@@ -9,6 +9,8 @@ matchit
 - spatial nearest neighbor matching
     + spatial caliper & distance decay functions
 
+- calrandom option (matchit2nearest): [default=FALSE] when set to FALSE, disables random sampling from control pool when using caliper (picks nearest instead)
+- static.selection option: [default=FALSE] when set to TRUE, removes certain random sampling options (picks first in list instead). useful for replicating results during testing (currently only used in matchit2nearest)
 
 demo
 - spatial demo
@@ -21,6 +23,8 @@ general improvements
 - improved code styling (spacing, indentation, line length, loop/conditional format)
 - improved various variable names for clarity
 - added comments
+- refactored a bunch of matchit2nearest
+- added a warning in matchit2nearest that provides number of treated units not matched due to caliper
 
 -------------------------------------------------------------------------------
 bugs
@@ -31,12 +35,8 @@ bugs
 -------------------------------------------------------------------------------
 issues
 
-- forced random sample from pool of eligible controls when using caliper
-
 - no real information is returned if matching fails due to no enough matches
-    + calclosest option description could be improved a bit, maybe with a simple example and someting regarding the implications of using this
-    + added a warning that provides number of treated units not matched due to caliper
-    + add a "calrandom" option to nearest matching (default=FALSE) where when FALSE will use the nearest match and when TRUE will randomly match from the pool (identical to old functionallity)
+- calclosest option description could be improved a bit, maybe with a simple example and someting regarding the implications of using this
 
 -------------------------------------------------------------------------------
 todo
