@@ -41,7 +41,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
     if (!('decay.model' %in% names(spatial.options))) {
       # use morans as default decay model
       spatial.options$decay.model <- "spherical"
-      spatial.options$decay.function <- paste("distance.decay.", spatial.options$decay.model, sep="")
+      spatial.options$decay.function <-
+        paste("distance.decay.", spatial.options$decay.model, sep="")
 
       warning("No distance decay model provided. Using default spherical
               method.")
@@ -50,7 +51,8 @@ matchit <- function(formula, data, method="nearest", distance="logit",
       # verfy decay model provided is valid
       fn0 <- paste("distance.decay.", spatial.options$decay.model, sep="")
       if (!exists(fn0)) {
-        stop(spatial.options$decay.model, "distance decay model not supported.")
+        stop(spatial.options$decay.model,
+             "distance decay model not supported.")
       }
       spatial.options$decay.function <- fn0
     }
@@ -191,7 +193,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
       spatial.options$threshold <- as.numeric(correlogram_data$x.intercept)
 
       # print(correlogram_data)
-      print("Plotting correlogram and x-intercept (spatial threshold) for PSM distance")
+      print("Plotting correlogram and x-int (spatial thresh) for PSM dist")
       plot.correlog(correlogram_data)
       print(spatial.options$threshold)
 

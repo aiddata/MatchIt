@@ -3,7 +3,7 @@
 
 distance.decay.threshold <- function(x, thresh) {
   if (x < thresh) {
-    y <- NA
+    y <- 1
   } else {
     y <- 0
   }
@@ -12,7 +12,7 @@ distance.decay.threshold <- function(x, thresh) {
 
 distance.decay.linear.threshold <- function(x, thresh) {
   if (x < thresh) {
-    y <- NA
+    y <- 1
   } else {
     y <- thresh/x
   }

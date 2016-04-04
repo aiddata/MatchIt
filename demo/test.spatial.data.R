@@ -16,13 +16,14 @@ library(gstat)
 # options
 
 # set dataframe size (number of points)
-nrandom <- 2000
+nrandom <- 3000
+control.ratio <- 0.75
 
 theta <- 1
 
 # variogram model range (larger = coarser autocorrelation) and psill
-var.vrange <- 2000
-var.psill <- 1
+var.vrange <- 500
+var.psill <- 0.8
 
 # numner of covariates
 ncovariates <- 1
@@ -35,6 +36,11 @@ maxy <- 22.5
 
 # correlogram increment size
 correlogram.increment <- 100
+
+# set = 1 for balanced ratio based on number of covariates
+# set < 1 for more random
+# set > 1 for greater spatial autocorrelation based on covariates
+treatment.autocorrelation <- 0.25
 
 # -----------------------------------------------------------------------------
 
@@ -91,8 +97,8 @@ for (i in 1:ncovariates) {
 
 # incorporate covariate distribution into treatment
 tmp.var.avg <- tmp.var / ncovariates
-tmp.treat.val <- tmp.random/(1+ncovariates) + tmp.var.avg
-treatment.binary <- ifelse(tmp.treat.val > quantile(tmp.treat.val, 0.50), 1, 0)
+tmp.treat.val <- tmp.random/((1+ncovariates) * treatment.autocorrelation) + tmp.var.avg
+treatment.binary <- ifelse(tmp.treat.val > quantile(tmp.treat.val, control.ratio), 1, 0)
 spdf$treatment.status = treatment.binary
 
 
@@ -131,7 +137,7 @@ spdf$error <-  error.var
 
 # plot spatial autocorrelation of covariates
 spplot(spdf, zcol=names(spdf)[names(spdf) != "id"])
-
+spplot(spdf, zcol=names(spdf)[names(spdf) %in% c("treatment.status", "var1")])
 
 
 vgm1 <- variogram(var1~1, spdf)
@@ -154,7 +160,7 @@ plot(vgm1)
 # traditional, non-spatial matchit
 m1.out <- matchit(treatment.status ~ var1, data=spdf@data,
                   method="nearest", distance="logit", 
-                  caliper=0.25, calclosest=FALSE, calrandom=FALSE)
+                  caliper=0, calclosest=FALSE, calrandom=FALSE)
 
 
 # ====================================
@@ -292,7 +298,7 @@ m1.autocorrelation.match.count <- length(
 #                      threshold = 0.05)
 
 spatial.opts <- list(decay.model = "threshold",
-                     threshold = correlogram.xintercept)
+                     threshold = 1000)
 
 
 detach("package:MatchIt", unload=TRUE)
@@ -301,7 +307,7 @@ library(MatchIt)
 
 m2.out <- matchit(treatment.status ~ var1, data=spdf,
                   method = "nearest", distance = "logit", 
-                  caliper=0.25, calclosest=FALSE, calrandom=FALSE,
+                  caliper=0, calclosest=FALSE, calrandom=FALSE,
                   spatial.options=spatial.opts)
 
 # -------------------------------------
@@ -386,22 +392,22 @@ hist(m2.match.distances)
 ###
 
 
-# traditional.diff.a <- c()
-# spatial.diff.a <- c()
+# -------------------------------------
 
-traditional.diff.b <- c()
-spatial.diff.b <- c()
+
+# traditional.diff.b <- c()
+# spatial.diff.b <- c()
 
 
 true.treatment <- c()
 
-z.vals <- c(seq(0, 3000, 1))
+z.vals <- c(seq(0, 1000, 1))
 
-# spdf$spillover.var <- spdf$spillover.weights
+spdf$spillover.var <- tmp.spillover.weights
 for (i in 1:length(z.vals)) {
-
+ 
   z <- z.vals[i]
-  
+
   spdf$treatment.effect <- 1 * spdf$treatment.status
   
   spdf$z <- z
@@ -417,53 +423,22 @@ for (i in 1:length(z.vals)) {
   spdf$outcome <- spdf$treatment.effect + spdf$spillover +
     spdf$ancillary + spdf$error + spdf$intercept
 
-  true.treatment[i] <- theta + (z * tmp.spillover.t1 / nrandom)
-
-  # spplot(spdf, zcol=c('treatment.effect'), main='treatment.effect')
-  # spplot(spdf, zcol=c('spillover'), main='spillover')
-  # spplot(spdf, zcol=c('ancillary'), main='ancillary')
-
-  # spplot(spdf, zcol=c('treatment.effect', 'spillover', 'ancillary'),
-  #        main='treatment.effect, spillover, ancillary')
-
-  # spplot(spdf, zcol=c('outcome'), main='outcome')
-
+  # true.treatment[i] <- theta + (z * tmp.spillover.t1 / nrandom)
+  true.treatment[i] <- sum(spdf$treatment.effect + spdf$spillover) / nrandom
   
-  
-#   test.model.traditional.a <- lm(outcome ~ treatment.status + var1 + var2 + var3,
-#                                  data=match.data(m1.out))
-#   test.model.spatial.a <- lm(outcome ~ treatment.status + var1 + var2 + var3,
-#                              data=match.data(m2.out))
-# 
-#   test.predict.traditional.a <- predict(test.model.traditional.a, spdf@data)
-#   test.predict.spatial.a <- predict(test.model.spatial.a, spdf@data)
-# 
-#   traditional.diff.a[i] <- mean(abs(test.predict.traditional.a - spdf$outcome))
-#   spatial.diff.a[i] <- mean(abs(test.predict.spatial.a - spdf$outcome))
-#   
-#   if (i == 1) {
-#     traditional.coef.a <- summary(test.model.traditional.a)$coef[, 1]
-#     spatial.coef.a <- summary(test.model.spatial.a)$coef[, 1]
-#     
-#   } else {
-#     traditional.coef.a <- rbind(traditional.coef.a, 
-#                                 summary(test.model.traditional.a)$coef[, 1])
-#     spatial.coef.a <- rbind(spatial.coef.a, 
-#                             summary(test.model.spatial.a)$coef[, 1])
-#   }
-  
-  
-  test.model.traditional.b <- lm(outcome ~ 0 + treatment.status + var1,# + spillover.var,
+
+  test.model.traditional.b <- lm(outcome ~ 0 + treatment.status + var1 + spillover.var,
                                  data=match.data(m1.out))
-  test.model.spatial.b <- lm(outcome ~ 0 + treatment.status + var1,# + spillover.var,
+  test.model.spatial.b <- lm(outcome ~ 0 + treatment.status + var1 + spillover.var,
                              data=match.data(m2.out))
 
   test.predict.traditional.b <- predict(test.model.traditional.b, spdf@data)
   test.predict.spatial.b <- predict(test.model.spatial.b, spdf@data)
 
-  traditional.diff.b[i] <- mean(abs(test.predict.traditional.b - spdf$outcome))
-  spatial.diff.b[i] <- mean(abs(test.predict.spatial.b - spdf$outcome))
   
+  # traditional.diff.b[i] <- mean(abs(test.predict.traditional.b - spdf$outcome))
+  # spatial.diff.b[i] <- mean(abs(test.predict.spatial.b - spdf$outcome))
+
   
   if (i == 1) {
     traditional.coef.b <- summary(test.model.traditional.b)$coef[, 1]
@@ -483,12 +458,11 @@ for (i in 1:length(z.vals)) {
 plot(z.vals, true.treatment, main='true')
 
 
-
-# plot(z.vals, spatial.diff.a, col="green", type="l", 
-#      ylim=c(-10, 10), main='diff a')
-# lines(z.vals, traditional.diff.a, col="blue")
+# plot(z.vals, spatial.diff.b, col="green", type="l", 
+#      ylim=c(min(spatial.diff.b), max(traditional.diff.b)), main='diff b')
+# lines(z.vals, traditional.diff.b, col="blue")
 # 
-# legend(0, 10, 
+# legend(0, max(traditional.diff.b), 
 #        c('traditional', 'spatial'), 
 #        lty=c(1, 1), 
 #        lwd=c(2.5, 2.5),
@@ -496,78 +470,58 @@ plot(z.vals, true.treatment, main='true')
 
 
 
-plot(z.vals, spatial.diff.b, col="green", type="l", 
-     ylim=c(min(spatial.diff.b), max(traditional.diff.b)), main='diff b')
-lines(z.vals, traditional.diff.b, col="blue")
+max.y.val <- max(traditional.coef.b, spatial.coef.b)
+min.y.val <- min(traditional.coef.b, spatial.coef.b)
 
-legend(0, 20, 
+plot(x=z.vals, type="n", main='Coef b', ylab="", xlab="z", 
+     ylim=c(min.y.val, max.y.val), 
+     xlim=c(min(z.vals), max(z.vals)))
+
+lines(z.vals, traditional.coef.b[, 'treatment.status'], 
+      col="red", lty=2, lwd=1)
+lines(z.vals, spatial.coef.b[, 'treatment.status'],# + spatial.coef.b[, 'spillover.var'], 
+      col="red", lty=1, lwd=1)
+
+lines(z.vals, abs(traditional.coef.b[, 'var1']), 
+      col="green", lty=2, lwd=1)
+lines(z.vals, abs(spatial.coef.b[, 'var1']), 
+      col="green", lty=1, lwd=1)
+
+# lines(z.vals, spatial.coef.b[, 'spillover.var'], 
+#       col="blue", lty=1, lwd=1)
+
+
+legend(min(z.vals), max.y.val - 0.35*max.y.val, 
        c('traditional', 'spatial'), 
-       lty=c(1, 1), 
-       lwd=c(2.5, 2.5),
+       lty=c(2, 1), lwd=c(2.5)) 
+
+legend(min(z.vals), max.y.val, 
+       c('treatment.status', 'var1', 'spatial spillover'), 
+       lty=c(1), lwd=c(2.5), 
+       col=c("red", "green", "blue")) 
+
+
+
+
+
+tmp.traditional.diff <- (true.treatment - traditional.coef.b[, 'treatment.status'])
+tmp.spatial.diff <- (true.treatment - (spatial.coef.b[, 'treatment.status'] )) #+ spatial.coef.b[, 'spillover.var']))
+  
+
+plot(x=z.vals, type="n", main='diff', ylab="", xlab="z", 
+     ylim=c(min(tmp.traditional.diff, tmp.spatial.diff), 
+            max(tmp.traditional.diff, tmp.spatial.diff)),
+     xlim=c(min(z.vals), max(z.vals)))
+
+lines(z.vals, tmp.traditional.diff, col="green")
+lines(z.vals, tmp.spatial.diff, col="blue")
+
+legend(min(z.vals), max(tmp.traditional.diff, tmp.spatial.diff), 
+       c('traditional', 'spatial'), 
+       lty=c(1), 
+       lwd=c(2.5),
        col=c('blue', 'green')) 
 
-
-
-# plot(x=z.vals, type="n", ylim=c(-10, 1000), main='Coef a', ylab="", xlab="z")
-# 
-# lines(z.vals, traditional.coef.a[, '(Intercept)'], col="black", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.a[, '(Intercept)'], col="black", lty=1, lwd=1)
-# 
-# lines(z.vals, traditional.coef.a[, 'treatment.status'], col="red", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.a[, 'treatment.status'], col="red", lty=1, lwd=1)
-# 
-# lines(z.vals, traditional.coef.a[, 'var1'], col="green", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.a[, 'var1'], col="green", lty=1, lwd=1)
-# 
-# lines(z.vals, traditional.coef.a[, 'var2'], col="blue", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.a[, 'var2'], col="blue", lty=1, lwd=1)
-# 
-# lines(z.vals, traditional.coef.a[, 'var3'], col="purple", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.a[, 'var3'], col="purple", lty=1, lwd=1)
-# 
-# lines(z.vals, traditional.coef.a[, 'spillover.var'], col="brown", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.a[, 'spillover.var'], col="brown", lty=1, lwd=1)
-
-# legend(0, 25, 
-#        c('traditional', 'spatial'), 
-#        lty=c(2, 1), 
-#        lwd=c(2.5)) 
-# 
-# legend(0, 20, 
-#        c('intercept', 'treatment.status', 'var1', 'var2', 'var3', 'spillover.var'), 
-#        lty=c(1), 
-#        lwd=c(2.5), 
-#        col=c("black", "red", "green", "blue", "purple", "brown")) 
-
-
-
-plot(x=z.vals, type="n", ylim=c(0, 3000), xlim=c(min(z.vals), max(z.vals)), main='Coef b', ylab="", xlab="z")
-
-lines(z.vals, traditional.coef.b[, 'treatment.status'], col="red", lty=2, lwd=1)
-lines(z.vals, spatial.coef.b[, 'treatment.status'], col="red", lty=1, lwd=1)
-
-lines(z.vals, traditional.coef.b[, 'var1'], col="green", lty=2, lwd=1)
-lines(z.vals, spatial.coef.b[, 'var1'], col="green", lty=1, lwd=1)
-
-# lines(z.vals, traditional.coef.b[, 'var2'], col="blue", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.b[, 'var2'], col="blue", lty=1, lwd=1)
-# 
-# lines(z.vals, traditional.coef.b[, 'var3'], col="purple", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.b[, 'var3'], col="purple", lty=1, lwd=1)
-# 
-# lines(z.vals, traditional.coef.b[, 'spillover.var'], col="brown", lty=2, lwd=1)
-# lines(z.vals, spatial.coef.b[, 'spillover.var'], col="brown", lty=1, lwd=1)
-
-legend(0, 500, 
-       c('traditional', 'spatial'), 
-       lty=c(2, 1), 
-       lwd=c(2.5)) 
-
-legend(0, 350, 
-       c('treatment.status', 'var1'), 
-       lty=c(1), 
-       lwd=c(2.5), 
-       col=c("red", "green")) 
 
 
 

@@ -167,6 +167,30 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # used when caliper == 0 to track # of treated units which had no eligible
   # control pool due to caliper
   empty.c.pool <- 0
+
+  if (is.spatial == TRUE) {
+    treated.units <- spatial.data[t.labels, ]
+    tmp.controls <- spatial.data[c.labels, ]
+
+    for (i in 1:nrow(tmp.controls)){
+
+      tmp.dists <- spDistsN1(treated.units, tmp.controls[i, ],
+                             longlat=TRUE)
+
+      tmp.weights <- run.distance.decay(thresh=spatial.threshold,
+                                        dist=tmp.dists,
+                                        func=spatial.decay.function)
+
+      tmp.controls$sp.dist.weights[i] <- mean(tmp.weights)
+    }
+
+    spatial.data$sp.dist.weights <- NA
+
+    tmp.rows <- rownames(spatial.data@data) %in% rownames(tmp.controls@data)
+    spatial.data[tmp.rows, 'sp.dist.weights'] <- tmp.controls$sp.dist.weights
+
+  }
+
   # ---------------------------------------------------------------------------
 
 
@@ -327,10 +351,15 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     if (is.spatial == TRUE && !is.null(c.deviations)) {
 
       # spatial penalties are applied to c.deviations
-      c.deviations <- spatial.effects.pscore.deviation(spatial.threshold,
-                                                    spatial.decay.function,
-                                                    spatial.data,
-                                                    c.deviations, t.iter.label)
+      # c.deviations <- spatial.effects.pscore.deviation(spatial.threshold,
+      #                                                  spatial.decay.function,
+      #                                                  spatial.data,
+      #                                                  c.deviations,
+      #                                                  t.iter.label)
+
+
+      c.deviations <- 0.5 * (c.deviations +
+                       spatial.data@data[names(c.deviations), ]$sp.dist.weights)
 
       # update c.labels2 to remove units with NA deviations and update
       # deviations
