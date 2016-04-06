@@ -231,11 +231,12 @@ for (i in 1:nrandom) {
   tmp.spillover.weights[i] <- tmp.sum / sum(tmp.neighbors * tmp.treated)
 
 }
+tmp.spillover.weights[is.na(tmp.spillover.weights)] <- 0
 
 tmp.spillover.t1 <- sum(theta * spdf$treatment.status)
 
 tmp.spillover.t2 <- c()
-sum.spillover.weights <- sum(tmp.spillover.weights)
+sum.spillover.weights <- sum(tmp.spillover.weights, na.rm=TRUE)
 for (i in 1:nrandom) {
   tmp.spillover.t2[i] <- tmp.spillover.weights[i] / sum.spillover.weights
 }
