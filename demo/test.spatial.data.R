@@ -11,7 +11,7 @@ library(sp)
 library(ncf)
 library(gstat)
 
-
+rm(list = ls())
 # -----------------------------------------------------------------------------
 # options
 
