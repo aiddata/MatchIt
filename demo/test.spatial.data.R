@@ -101,15 +101,19 @@ tmp.treat.val <- tmp.random/((1+ncovariates) * treatment.autocorrelation) + tmp.
 treatment.binary <- ifelse(tmp.treat.val > quantile(tmp.treat.val, control.ratio), 1, 0)
 spdf$treatment.status = treatment.binary
 
+spdf$var1.true <- tmp.var
 
 # ---------------------------
 # random error
 
 error.vrange <- 1
-error.psill <- 0.5
+error.psill <- 1
 error.ratio <- 1
-error.scale <- 5.0
+error.scale <- 0.5
 
+l=1
+while(l <= 2)
+{
 error.g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
                  model=vgm(psill=error.psill, model="Sph", range=error.vrange),
                  nmax=20)
@@ -130,8 +134,17 @@ error.var.modified <- error.random +
 
 error.var <- (error.var.modified / 3) * error.scale * ncovariates
 
-spdf$error <-  error.var
 
+if(l==1){
+  spdf$error.outcome <-  error.var
+}
+if(l==2){
+  spdf$error.var1 <-  error.var
+}
+l = l + 1
+}
+
+spdf$var1 <- spdf$var1 + spdf$error.var1
 # ---------------------------
 
 
@@ -160,7 +173,7 @@ plot(vgm1)
 # traditional, non-spatial matchit
 m1.out <- matchit(treatment.status ~ var1, data=spdf@data,
                   method="nearest", distance="logit", 
-                  caliper=0.25, calclosest=FALSE, calrandom=FALSE)
+                  caliper=2.0, calclosest=FALSE, calrandom=FALSE)
 
 
 # ====================================
@@ -177,25 +190,8 @@ correlogram.data <- correlog(x=spdf@coords[, 1],
 correlogram.xintercept <- as.numeric(correlogram.data$x.intercept)
 
 plot.correlog(correlogram.data)
-mtext("PSM pscores")
+mtext("PSM pscores (with error)")
 
-# covariate.correlogram.xintercept <- c()
-# for (i in 1:ncovariates) {
-#
-#   tmp.correlogram.data <- correlog(x=spdf@coords[, 1],
-#                                    y=spdf@coords[, 2],
-#                                    z=spdf@data[[paste("var", i, sep="")]],
-#                                    increment=correlogram.increment,
-#                                    latlon=TRUE, na.rm=TRUE, resamp=50,
-#                                    quiet=TRUE)
-#
-#   covariate.correlogram.xintercept[i] <-
-#     as.numeric(tmp.correlogram.data$x.intercept)
-#
-#   plot(tmp.correlogram.data)
-#   mtext(paste("var", i, sep=""))
-#
-# }
 
 model.correlogram.data <- data.frame(
   y = correlogram.data$correlation,
@@ -204,6 +200,34 @@ model.correlogram.data <- data.frame(
 
 correlogram.polynomial <- lm(y ~ poly(x, 10, raw=TRUE),
                              data=model.correlogram.data)
+
+
+#Second model using the model without error for data generation.
+
+m1.out.true <- matchit(treatment.status ~ var1.true, data=spdf@data,
+                  method="nearest", distance="logit", 
+                  caliper=0.25, calclosest=FALSE, calrandom=FALSE)
+
+correlogram.data.true <- correlog(x=spdf@coords[, 1],
+                             y=spdf@coords[, 2],
+                             z=m1.out.true$distance,
+                             increment=correlogram.increment,
+                             latlon=TRUE, na.rm=TRUE, resamp=10,
+                             quiet=FALSE)
+
+correlogram.xintercept.true  <- as.numeric(correlogram.data.true $x.intercept)
+
+plot.correlog(correlogram.data.true )
+mtext("PSM pscores (true)")
+
+
+model.correlogram.data.true  <- data.frame(
+  y = correlogram.data.true $correlation,
+  x = correlogram.data.true $mean.of.class
+)
+
+correlogram.polynomial.true <- lm(y ~ poly(x, 10, raw=TRUE),
+                             data=model.correlogram.data.true )
 
 
 
@@ -224,7 +248,7 @@ for (i in 1:nrandom) {
   tmp.newdata <- data.frame(
     x = c(tmp.dist)
   )
-  tmp.newdata$y <- predict(correlogram.polynomial, tmp.newdata)
+  tmp.newdata$y <- predict(correlogram.polynomial.true, tmp.newdata)
 
   tmp.sum <- sum(abs(tmp.newdata$y) * tmp.neighbors * tmp.treated)
 
@@ -244,32 +268,7 @@ for (i in 1:nrandom) {
     }
   }
 
-# z <- 5000
-#
-# spdf$treatment.effect <- theta * spdf$treatment.status
-# spdf$spillover <- z * tmp.spillover.t1 * tmp.spillover.t2
-# spdf$ancillary <- tmp.var.avg
-# spdf$error <- 0
-# spdf$intercept <- 0
-#
-# spdf$outcome <- spdf$treatment.effect + spdf$spillover +
-#                 spdf$ancillary + spdf$error + spdf$intercept
 
-# spplot(spdf, zcol=names(spdf)[names(spdf) != "id"])
-
-# spplot(spdf, zcol=c('treatment.effect'), main='treatment.effect')
-# spplot(spdf, zcol=c('spillover'), main='spillover')
-# spplot(spdf, zcol=c('ancillary'), main='ancillary')
-#
-# spplot(spdf, zcol=c('treatment.effect', 'spillover', 'ancillary'),
-#        main='treatment.effect, spillover, ancillary')
-#
-# spplot(spdf, zcol=c('outcome'), main='outcome')
-
-# spplot(spdf, zcol=c('error'))
-# spplot(spdf, zcol=c('intercept'))
-
-# ====================================
 
 
 m1.match.distances <- c()
@@ -301,13 +300,13 @@ m1.autocorrelation.match.count <- length(
 # spatial.opts <- list(decay.model = "gaussian.semivariance",
 #                      threshold = 0.05)
 
-spatial.opts <- list(decay.model = "spherical",
+spatial.opts <- list(decay.model = "threshold",
                      threshold = neighbor.threshold)
 
 
 m2.out <- matchit(treatment.status ~ var1, data=spdf,
                   method = "nearest", distance = "logit", 
-                  caliper=0.25, calclosest=FALSE, calrandom=FALSE,
+                  caliper=0, calclosest=FALSE, calrandom=FALSE,
                   spatial.options=spatial.opts)
 
 # -------------------------------------
@@ -342,66 +341,12 @@ mean(m2.match.distances, na.rm=T)
 hist(m1.match.distances)
 hist(m2.match.distances)
 
-# -----------------------------------------------------------------------------
 
-###
-
-# matchit.traditional.data <- match.data(m1.out)
-# tmp.traditional.pairs <- rep(0, length(matchit.traditional.data))
-# 
-# for (i in 1:length(m1.out$match.matrix)) {
-#   control.id <- as.numeric(labels(m1.out$match.matrix)[[1]][i])
-#   treated.id <- m1.out$match.matrix[i]
-# 
-#   if (!is.na(treated.id)) {
-#     treated.id <- as.numeric(treated.id)
-# 
-#     pair.id <- factor(paste(as.character(control.id),
-#                             as.character(treated.id), sep="_"))
-# 
-#     tmp.traditional.pairs[control.id] <- pair.id
-#     tmp.traditional.pairs[treated.id] <- pair.id
-# 
-#   }
-# }
-# 
-# matchit.traditional.data$pairs <- tmp.traditional.pairs
-# 
-# 
-# matchit.spatial.data <- match.data(m2.out)
-# tmp.spatial.pairs <- rep(0, length(matchit.spatial.data))
-# 
-# for (i in 1:length(m2.out$match.matrix)) {
-#   control.id <- as.numeric(labels(m2.out$match.matrix)[[1]][i])
-#   treated.id <- m1.out$match.matrix[i]
-# 
-#   if (!is.na(treated.id)) {
-#     treated.id <- as.numeric(treated.id)
-# 
-#     pair.id <- factor(paste(as.character(control.id),
-#                             as.character(treated.id), sep="_"))
-# 
-#     tmp.spatial.pairs[control.id] <- pair.id
-#     tmp.spatial.pairs[treated.id] <- pair.id
-# 
-#   }
-# }
-# 
-# matchit.spatial.data$pairs <- tmp.spatial.pairs
-
-###
-
-
-# -------------------------------------
-
-
-# traditional.diff.b <- c()
-# spatial.diff.b <- c()
 
 
 true.treatment <- c()
 
-z.vals <- c(seq(0, 25, 0.1))
+z.vals <- c(seq(0, 50, 0.1))
 
 spdf$spillover.var <- tmp.spillover.weights
 for (i in 1:length(z.vals)) {
@@ -417,11 +362,11 @@ for (i in 1:length(z.vals)) {
 
   
   spdf$ancillary <- tmp.var
-  # spdf$error <- 0
+  
   spdf$intercept <- 0
   
   spdf$outcome <- spdf$treatment.effect + spdf$spillover +
-    spdf$ancillary + spdf$error + spdf$intercept
+    spdf$ancillary + spdf$intercept + spdf$error.outcome
 
   # true.treatment[i] <- theta + (z * tmp.spillover.t1 / nrandom)
   true.treatment[i] <- sum(spdf$treatment.effect + spdf$spillover) / nrandom
@@ -438,8 +383,8 @@ for (i in 1:length(z.vals)) {
   test.model.spatial.b.spill <- lm(outcome ~ 0 + treatment.status + var1 + spillover.var,
                              data=match.data(m2.out))
 
-  test.predict.traditional.b.spill <- predict(test.model.traditional.b, spdf@data)
-  test.predict.spatial.b.spill <- predict(test.model.spatial.b, spdf@data)
+  test.predict.traditional.b.spill <- predict(test.model.traditional.b.spill, spdf@data)
+  test.predict.spatial.b.spill <- predict(test.model.spatial.b.spill, spdf@data)
 
   test.predict.traditional.b.noSpill <- predict(test.model.traditional.b.noSpill, spdf@data)
   test.predict.spatial.b.noSpill <- predict(test.model.spatial.b.noSpill, spdf@data)
@@ -515,11 +460,11 @@ legend(min(z.vals), max.y.val,
 trad.treatment.spill <- vector()
 spatial.treatment.spill <- vector()
 
-for(i in 1:length(traditional.coef.b.spill[,'treatment.status'])){
-  trad.treatment.spill[i] <- sum((spdf@data$treatment.status * traditional.coef.b.spill[, 'treatment.status'][i]) + 
-    (spdf@data$spillover.var * traditional.coef.b.spill[, 'spillover.var'][i])) / nrandom
-  spatial.treatment.spill[i] <- sum((spdf@data$treatment.status * spatial.coef.b.spill[, 'treatment.status'][i]) + 
-    (spdf@data$spillover.var * spatial.coef.b.spill[, 'spillover.var'][i])) / nrandom
+for(j in 1:length(traditional.coef.b.spill[,'treatment.status'])){
+  trad.treatment.spill[j] <- sum((spdf@data$treatment.status * traditional.coef.b.spill[, 'treatment.status'][j]) + 
+    (spdf@data$spillover.var * traditional.coef.b.spill[, 'spillover.var'][j])) / nrandom
+  spatial.treatment.spill[j] <- sum((spdf@data$treatment.status * spatial.coef.b.spill[, 'treatment.status'][j]) + 
+    (spdf@data$spillover.var * spatial.coef.b.spill[, 'spillover.var'][j])) / nrandom
 }
 
 
@@ -577,11 +522,11 @@ legend(min(z.vals), max.y.val,
 trad.treatment.noSpill <- vector()
 spatial.treatment.noSpill <- vector()
 
-for(i in 1:length(traditional.coef.b[,'treatment.status'])){
-  trad.treatment.noSpill[i] <- sum(spdf@data$treatment.status * 
-                                     traditional.coef.b.noSpill[, 'treatment.status'][i]) / nrandom
-  spatial.treatment.noSpill[i] <- sum(spdf@data$treatment.status * 
-                                         spatial.coef.b.noSpill[, 'treatment.status'][i]) / nrandom
+for(j in 1:length(traditional.coef.b.noSpill[,'treatment.status'])){
+  trad.treatment.noSpill[j] <- sum(spdf@data$treatment.status * 
+                                     traditional.coef.b.noSpill[, 'treatment.status'][j]) / nrandom
+  spatial.treatment.noSpill[j] <- sum(spdf@data$treatment.status * 
+                                         spatial.coef.b.noSpill[, 'treatment.status'][j]) / nrandom
 }
 
 
