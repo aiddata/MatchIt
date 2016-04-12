@@ -98,7 +98,7 @@ vgm.spillover$fit <- predict(vgm.polynomial, vgm.spillover)
 
 
 
-#Calculate the average distance to treated units for each unit (excluding itself)
+#Calculate the distance to treated units for each unit (excluding itself)
 tmp.spillover.weights <- c()
 for (i in 1:nrandom) {
   
