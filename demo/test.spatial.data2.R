@@ -1,10 +1,18 @@
 library(sp)
 library(ncf)
 library(gstat)
+library(devtools)
+
+detach("package:MatchIt", unload=TRUE)
+load_all("~/Desktop/Github/MatchIt/R")
+# library(devtools)
+# install_github("itpir/matchit")
+library(MatchIt)
+
 
 rm(list = ls())
 
-iterations <- 5
+iterations <- 25
 
 results <- data.frame(
   id=c(1:iterations)
@@ -14,8 +22,12 @@ results_out <- data.frame(
   id=c(1:iterations)
 )
 
-for(p in 1:iterations)
+
+ptm <- proc.time()
+
+  for(p in 1:iterations)
 {
+
   results["id"] <- p
   results_out["id"] <- p
   # -----------------------------------------------------------------------------
@@ -30,7 +42,7 @@ for(p in 1:iterations)
   #General psill
   #Note: setting this to 0 will result in no data randomization.
   #Larger values indicate more autocorrelation.
-  psill <- 1.0 + runif(1, -.95, 10)
+  psill <- 1.0 #+ runif(1, -.95, 10)
   
   # define bounding box
   minx <- -45
@@ -39,17 +51,17 @@ for(p in 1:iterations)
   maxy <- 22.5
   
   #Covariate Spatial Correlation
-  var1.vrange <- 1.0 + runif(1, -.95, 5)
+  var1.vrange <- 1.0 #+ runif(1, -.95, 5)
   
   
   #Degree to which the covariate
   #explains the propensity to receive
   #treatment (1.0 = perfect correlation, or no error)
-  prop_acc = runif(1, 0.5, .95)
+  prop_acc = 0.75 #runif(1, 0.5, .95)
   
   #Spatial pattern in the PSM error, if any 
   #(vrange = 1 approximates random noise)
-  var1_error.vrange <- runif(1, 0.1, .95)
+  var1_error.vrange <- 0.1 #runif(1, 0.1, .95)
   
   #Define the spatial pattern of any model error.
   #Magnitue of error is 0-1 (0 = no error)
@@ -72,10 +84,10 @@ for(p in 1:iterations)
   spill.vrange <- 1.0 + runif(1, -.95, 10)
   
   #Spillover Magnitude (relative to theta)
-  spill.magnitude <- 1 * runif(1, 0, 50)
+  spill.magnitude <- 1 * runif(1, 0, 5000) * theta
   
   #Caliper for Matching
-  caliper = 0.5
+  cal = runif(1, 0.25, 1.0)
   
   # -----------------------------------------------------------------------------
   # Data Simulation
@@ -121,7 +133,7 @@ for(p in 1:iterations)
   #Baseline for Comparison
   baseline.matchit <- matchit(treatment.status ~ modelVar, data=spdf@data,
                     method="nearest", distance="logit", 
-                    caliper=caliper, calclosest=FALSE, calrandom=FALSE)
+                    caliper=cal, calclosest=FALSE, calrandom=FALSE)
   
   baseline.model <- lm(modelOutcome ~ treatment.status +  modelVar, 
                        data=match.data(baseline.matchit))
@@ -136,7 +148,7 @@ for(p in 1:iterations)
 
   spatial.trueThreshold <- matchit(treatment.status ~ modelVar, data=spdf,
                     method = "nearest", distance = "logit", 
-                    caliper=caliper, calclosest=FALSE, calrandom=FALSE,
+                    caliper=cal, calclosest=FALSE, calrandom=FALSE,
                     spatial.options=spatial.opts)
   
   spatial.trueThreshold.model <- lm(modelOutcome ~ treatment.status +  modelVar, 
@@ -201,13 +213,15 @@ for(p in 1:iterations)
   outcome.predictions@data$baseline.spill.model <- predict(baseline.spill.model, 
                                                            newdata=p_cor_spdf@data)
   treatment.predictions@data$baseline.spill.model <- 
-    summary(baseline.spill.model)$coefficients[2]
+    ((summary(baseline.spill.model)$coefficients[2] * nrandom) + 
+    (summary(baseline.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
+    nrandom
   
   
   #Baseline Matchit with Spillover
   baseline.matchit.spill <- matchit(treatment.status ~ modelVar, data=p_cor_spdf@data,
                               method="nearest", distance="logit", 
-                              caliper=caliper, calclosest=FALSE, calrandom=FALSE)
+                              caliper=cal, calclosest=FALSE, calrandom=FALSE)
   
   baseline.matchit.spill.model <- lm(modelOutcome ~ treatment.status +  modelVar + spillover.est, 
                              data=match.data(baseline.matchit.spill))
@@ -215,15 +229,19 @@ for(p in 1:iterations)
   outcome.predictions@data$matchit.spill.model <- predict(baseline.matchit.spill.model, 
                                                            newdata=p_cor_spdf@data)
   treatment.predictions@data$matchit.spill.model <- 
-    summary(baseline.matchit.spill.model)$coefficients[2]
+    ((summary(baseline.matchit.spill.model)$coefficients[2] * nrandom) + 
+       (summary(baseline.matchit.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
+    nrandom
+  
+
   
   #Spatial Matchit with Spillover
-  spatial.opts <- list(decay.model = "spherical",
+  spatial.opts <- list(decay.model = "threshold",
                        threshold = (correlog.pscore.spillover$x.intercept+100))
   
   spatial.matchit.spill <- matchit(treatment.status ~ modelVar, data=p_cor_spdf@data,
                                     method="nearest", distance="logit", 
-                                    caliper=caliper, calclosest=FALSE, calrandom=FALSE)
+                                    caliper=cal, calclosest=FALSE, calrandom=FALSE)
   
   spatial.matchit.spill.model <- lm(modelOutcome ~ treatment.status +  modelVar + spillover.est, 
                                      data=match.data(spatial.matchit.spill))
@@ -231,7 +249,9 @@ for(p in 1:iterations)
   outcome.predictions@data$spatial.matchit.spill <- predict(spatial.matchit.spill.model, 
                                                           newdata=p_cor_spdf@data)
   treatment.predictions@data$spatial.matchit.spill <- 
-    summary(spatial.matchit.spill.model)$coefficients[2]
+    ((summary(spatial.matchit.spill.model)$coefficients[2] * nrandom) + 
+       (summary(spatial.matchit.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
+    nrandom
   
   
   #Save Summary Results
@@ -270,6 +290,7 @@ for(p in 1:iterations)
     results["beta"] <- NA
     results["var1_error.vrange"] <- NA
     results["theta"] <- NA
+    results["caliper"] <- NA
     
     results_out["spill.magnitude"] <- NA
     results_out["psill"] <- NA
@@ -281,6 +302,7 @@ for(p in 1:iterations)
     results_out["beta"] <- NA
     results_out["var1_error.vrange"] <- NA
     results_out["theta"] <- NA
+    results_out["caliper"] <- NA
   }
   results["spill.magnitude"][p,] <- spill.magnitude
   results["psill"][p,] <- psill
@@ -292,6 +314,7 @@ for(p in 1:iterations)
   results["beta"][p,] <- beta
   results["theta"][p,] <- theta
   results["var1_error.vrange"][p,] <- var1_error.vrange
+  results["caliper"][p,] <- cal
   
   results_out["spill.magnitude"][p,] <- spill.magnitude
   results_out["psill"][p,] <- psill
@@ -303,6 +326,7 @@ for(p in 1:iterations)
   results_out["beta"][p,] <- beta
   results_out["theta"][p,] <- theta
   results_out["var1_error.vrange"][p,] <- var1_error.vrange
+  results_out["caliper"][p,] <- cal
   
   
 
@@ -312,84 +336,12 @@ for(p in 1:iterations)
 #       [names(outcome.predictions) != "id"])
 #spplot(treatment.predictions, zcol=names(treatment.predictions)
 #       [names(treatment.predictions) != "id"])
-
+  print("Iteration Complete")
+  print(p)
+  print("----------------")
 }
 
-
-#visualizaiton function
-viz.sims <- function(results, varH, mtitle)
-{
-  results.plot <- results
-  eval(parse(text=paste("results.plot$v1 <- results.plot$",varH,sep="")))
-  results.plot <- results.plot[order(results.plot$v1),]
-  ylower <- min(results.plot$baseline)-min(results.plot$baseline)
-  yupper <- max(results.plot$baseline)*2
-  plot(ylim=c(ylower,yupper), 
-       results.plot$v1, 
-       results.plot$baseline, 
-       col="red", pch=3, 
-       main=mtitle,
-       ylab="Estimate",
-       xlab=varH)
-  lines(results.plot$v1,results.plot$baseline, col="red", pch=3)
-  
-  lines(results.plot$v1, 
-        results.plot$baseline.matchit, col="blue", pch=4)
-  points(results.plot$v1, 
-         results.plot$baseline.matchit , col="blue", pch=4)
-  
-  lines(results.plot$v1, 
-        results.plot$trueTreatment, col="green")
-  points(results.plot$v1, 
-         results.plot$trueTreatment, col="green")
-  
-  lines(results.plot$v1, 
-        results.plot$spatial.trueThreshold, col="orange", pch=2)
-  points(results.plot$v1, 
-         results.plot$spatial.trueThreshold , col="orange", pch=2)
-  
-  lines(results.plot$v1, 
-        results.plot$baseline.spill.model, col="black", pch=3)
-  points(results.plot$v1, 
-         results.plot$baseline.spill.model , col="black", pch=3)
-  
-  lines(results.plot$v1, 
-        results.plot$matchit.spill.model, col=109, pch=4)
-  points(results.plot$v1, 
-         results.plot$matchit.spill.model , col=109, pch=4)
-  
-  lines(results.plot$v1, 
-        results.plot$spatial.matchit.spill, col=144, pch=2)
-  points(results.plot$v1, 
-         results.plot$spatial.matchit.spill , col=144, pch=2)
-  
-  legend("topleft",
-         cex = 0.65,
-         legend=c("Baseline LM","True ATE", "Baseline MatchIt", 
-                  "Spatial True Thresh", "Baseline LM Spill", 
-                  "Matchit Spill", "Spatial Spill"), 
-         pch=c(pch = 3, pch=1, pch=4, pch=2, pch=3, pch=4, pch=2),
-         col=c(col="red", col="green", col="blue", col="orange", 
-               col="black", col=109, col=144), title = "Legend")
-}
-
-#Variable Spillover Magnitude
-viz.sims(results, "spill.magnitude", "ATE by Model")
-viz.sims(results, "var1.vrange", "ATE by Model")
-viz.sims(results, "psill", "ATE by Model")
-viz.sims(results, "prop_acc", "ATE by Model")
-viz.sims(results, "spill.vrange", "ATE by Model")
-
-
-viz.sims(results_out, "spill.magnitude", "Predicted Avg. Outcome")
-viz.sims(results_out, "var1.vrange", "Predicted Avg. Outcome")
-viz.sims(results_out, "psill", "Predicted Avg. Outcome")
-viz.sims(results_out, "prop_acc", "Predicted Avg. Outcome")
-viz.sims(results_out, "spill.vrange", "Predicted Avg. Outcome")
-
-
-
-
+print(proc.time() - ptm)
 
 
 

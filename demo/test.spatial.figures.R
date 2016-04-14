@@ -3,13 +3,7 @@
 # -----------------------------------------------------------------------------
 #Spillover Correlograms
 # -----------------------------------------------------------------------------
-library(devtools)
 
-detach("package:MatchIt", unload=TRUE)
-load_all("~/Desktop/Github/MatchIt/R")
-# library(devtools)
-# install_github("itpir/matchit")
-library(MatchIt)
 
 m1.out <- matchit(treatment.status ~ modelVar, data=spdf@data,
                   method="nearest", distance="logit", 
