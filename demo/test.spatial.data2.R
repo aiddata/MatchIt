@@ -12,13 +12,18 @@ library(MatchIt)
 
 rm(list = ls())
 
-iterations <- 25
+iterations <- 100
 
 results <- data.frame(
   id=c(1:iterations)
 )
 
 results_out <- data.frame(
+  id=c(1:iterations)
+)
+
+
+results_nospill <- data.frame(
   id=c(1:iterations)
 )
 
@@ -42,7 +47,7 @@ ptm <- proc.time()
   #General psill
   #Note: setting this to 0 will result in no data randomization.
   #Larger values indicate more autocorrelation.
-  psill <- 1.0 #+ runif(1, -.95, 10)
+  psill <- 200 #+ runif(1, -.95, 1)
   
   # define bounding box
   minx <- -45
@@ -51,13 +56,13 @@ ptm <- proc.time()
   maxy <- 22.5
   
   #Covariate Spatial Correlation
-  var1.vrange <- 1.0 #+ runif(1, -.95, 5)
+  var1.vrange <- 1 # runif(1, -.95, 20)
   
   
   #Degree to which the covariate
   #explains the propensity to receive
   #treatment (1.0 = perfect correlation, or no error)
-  prop_acc = 0.75 #runif(1, 0.5, .95)
+  prop_acc = runif(1, 0.5, .95)
   
   #Spatial pattern in the PSM error, if any 
   #(vrange = 1 approximates random noise)
@@ -70,7 +75,7 @@ ptm <- proc.time()
   
   #Percent of locations which are to be defined as
   #treated
-  trt_prc = .2
+  trt_prc = .25
   
   #Beta coefficient for ancillary data
   #in defining the treatment
@@ -78,13 +83,13 @@ ptm <- proc.time()
   
   #Theta coefficient for treatment effect
   #used for defining the outcome
-  theta <- 1.0 
+  theta <- 1.0 #+ runif(1, -.95, 10)
   
   #Spillover Range
-  spill.vrange <- 1.0 + runif(1, -.95, 10)
+  spill.vrange <- 1.0 #+ runif(1, -.95, 20)
   
   #Spillover Magnitude (relative to theta)
-  spill.magnitude <- 1 * runif(1, 0, 5000) * theta
+  spill.magnitude <- 1 * runif(1, 0, 100) * theta
   
   #Caliper for Matching
   cal = runif(1, 0.25, 1.0)
@@ -124,12 +129,17 @@ ptm <- proc.time()
   treatment.predictions@data$trueTreatment <- (treatment.predictions@data$treatment.status *
                                                theta) + treatment.predictions$trueSpill
   
+  nospill.t.pred <- spdf
+  nospill.t.pred@data <- nospill.t.pred@data[1]
+  nospill.t.pred@data$trueTreatment <- theta
+  
   
   #No Matching
   baseline <- lm(modelOutcome ~ treatment.status +  modelVar, data=spdf@data)
   outcome.predictions@data$baseline <- predict(baseline, newdata=spdf@data)
   treatment.predictions@data$baseline <- summary(baseline)$coefficients[2]
-  
+  nospill.t.pred@data$baseline <- summary(baseline)$coefficients[2]
+    
   #Baseline for Comparison
   baseline.matchit <- matchit(treatment.status ~ modelVar, data=spdf@data,
                     method="nearest", distance="logit", 
@@ -140,6 +150,7 @@ ptm <- proc.time()
   
   outcome.predictions@data$baseline.matchit <- predict(baseline.model, newdata=spdf@data)
   treatment.predictions@data$baseline.matchit <- summary(baseline.model)$coefficients[2]
+  nospill.t.pred@data$baseline.matchit <- summary(baseline.model)$coefficients[2]
   
   
   #Cheating Spatial PSM - we give the accurate vrange, and use it as a threshold.
@@ -158,7 +169,7 @@ ptm <- proc.time()
   treatment.predictions@data$spatial.trueThreshold <- 
     summary(spatial.trueThreshold.model)$coefficients[2]
   
-  
+  nospill.t.pred@data$spatial.trueThreshold <- summary(spatial.trueThreshold.model)$coefficients[2]
   
   
   #PSM-approximating Traditional and Spatial PSMs
@@ -217,6 +228,7 @@ ptm <- proc.time()
     (summary(baseline.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
     nrandom
   
+  nospill.t.pred@data$baseline.spill.model <- summary(baseline.spill.model)$coefficients[2]
   
   #Baseline Matchit with Spillover
   baseline.matchit.spill <- matchit(treatment.status ~ modelVar, data=p_cor_spdf@data,
@@ -233,12 +245,12 @@ ptm <- proc.time()
        (summary(baseline.matchit.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
     nrandom
   
-
+  nospill.t.pred@data$matchit.spill.model <- summary(baseline.matchit.spill.model)$coefficients[2]
   
   #Spatial Matchit with Spillover
   spatial.opts <- list(decay.model = "threshold",
-                       threshold = (correlog.pscore.spillover$x.intercept+100))
-  
+                       threshold = (correlog.pscore.spillover$x.intercept+1))
+  print(correlog.pscore.spillover$x.intercept)
   spatial.matchit.spill <- matchit(treatment.status ~ modelVar, data=p_cor_spdf@data,
                                     method="nearest", distance="logit", 
                                     caliper=cal, calclosest=FALSE, calrandom=FALSE)
@@ -253,8 +265,21 @@ ptm <- proc.time()
        (summary(spatial.matchit.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
     nrandom
   
-  
+  nospill.t.pred@data$spatial.matchit.spill <- summary(spatial.matchit.spill.model)$coefficients[2]
   #Save Summary Results
+  
+  for(i in 3:length(nospill.t.pred@data))
+  {
+
+    if(p == 1)
+    {
+      results_nospill[names(nospill.t.pred@data)[i]] <- NA
+      results_nospill["trueTreatment"] <- NA
+    }
+    results_nospill[names(nospill.t.pred@data)[i]][p,] <- mean(nospill.t.pred@data[,i])
+    results_nospill["trueTreatment"][p,] <- theta
+  }
+  
   for(i in 4:length(treatment.predictions@data))
   {
     if(p == 1)
@@ -303,6 +328,20 @@ ptm <- proc.time()
     results_out["var1_error.vrange"] <- NA
     results_out["theta"] <- NA
     results_out["caliper"] <- NA
+    
+    results_nospill["spill.magnitude"] <- NA
+    results_nospill["psill"] <- NA
+    results_nospill["var1.vrange"] <- NA
+    results_nospill["prop_acc"] <- NA
+    results_nospill["mod_error.vrange"] <- NA
+    results_nospill["mod_error.magnitude"] <- NA
+    results_nospill["spill.vrange"] <- NA
+    results_nospill["beta"] <- NA
+    results_nospill["var1_error.vrange"] <- NA
+    results_nospill["theta"] <- NA
+    results_nospill["caliper"] <- NA
+    
+    
   }
   results["spill.magnitude"][p,] <- spill.magnitude
   results["psill"][p,] <- psill
@@ -328,7 +367,17 @@ ptm <- proc.time()
   results_out["var1_error.vrange"][p,] <- var1_error.vrange
   results_out["caliper"][p,] <- cal
   
-  
+  results_nospill["spill.magnitude"][p,] <- spill.magnitude
+  results_nospill["psill"][p,] <- psill
+  results_nospill["var1.vrange"][p,] <- var1.vrange
+  results_nospill["prop_acc"][p,] <- prop_acc
+  results_nospill["mod_error.vrange"][p,] <- mod_error.vrange
+  results_nospill["mod_error.magnitude"][p,] <- mod_error.magnitude
+  results_nospill["spill.vrange"][p,] <- spill.vrange
+  results_nospill["beta"][p,] <- beta
+  results_nospill["theta"][p,] <- theta
+  results_nospill["var1_error.vrange"][p,] <- var1_error.vrange
+  results_nospill["caliper"][p,] <- cal
 
   
 #Compare Maps

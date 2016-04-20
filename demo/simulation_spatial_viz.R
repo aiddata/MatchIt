@@ -5,8 +5,8 @@ viz.sims <- function(results, varH, mtitle, pre="")
   results.plot <- results
   eval(parse(text=paste("results.plot$v1 <- results.plot$",varH,sep="")))
   results.plot <- results.plot[order(results.plot$v1),]
-  ylower <- min(results.plot[paste(pre,"baseline",sep="")]) - (2*abs(min(results.plot[paste(pre,"baseline",sep="")])))
-  yupper <- max(results.plot[paste(pre,"baseline",sep="")])*2
+  ylower <- min(results.plot[paste(pre,"baseline",sep="")]) #- (2*abs(min(results.plot[paste(pre,"baseline",sep="")])))
+  yupper <- max(results.plot[paste(pre,"baseline",sep="")])#*2
   plot(ylim=c(ylower,yupper), 
        results.plot$v1, 
        results.plot[paste(pre,"baseline",sep="")][[1]], 
@@ -72,6 +72,13 @@ viz.sims(results_out, "prop_acc", "Predicted Avg. Outcome")
 viz.sims(results_out, "spill.vrange", "Predicted Avg. Outcome")
 viz.sims(results_out, "caliper", "Predicted Avg. Outcome")
 
+viz.sims(results_nospill, "spill.magnitude", "Predicted Theta")
+viz.sims(results_nospill, "var1.vrange", "Predicted Theta") #5
+viz.sims(results_nospill, "psill", "Predicted Theta") #200
+viz.sims(results_nospill, "prop_acc", "Predicted Theta") #0.95
+viz.sims(results_nospill, "spill.vrange", "Predicted Theta") #1.0
+viz.sims(results_nospill, "caliper", "Predicted Theta")
+viz.sims(results_nospill, "theta", "Predicted Theta") #1.0
 
 
 #Compare to Truth
@@ -116,30 +123,26 @@ viz.sims(results, "caliper", "ATE by Model", "dif.")
 
 
 
-pot_ly(results, x=spill.magnitude, y=spill.vrange, 
-        z=baseline, type="scatter3d", mode="markers", opacity=0.5, name="Baseline")
-
-add_trace(results, x=spill.magnitude, y=spill.vrange, 
-          z=spatial.trueThreshold, 
-          type="scatter3d",
-          mode="markers",
-          opacity=0.5, 
-          name="Spatial Threshold")
-
-add_trace(results, x=spill.magnitude, y=spill.vrange, 
-          z=trueTreatment, 
-          type="scatter3d",
-          mode="markers",
-          opacity=0.5, 
-          name="True (0 Surface)")
-
-add_trace(results, x=spill.magnitude, y=spill.vrange, 
-          z=spatial.matchit.spill, 
-          type="scatter3d",
-          mode="markers",
-          opacity=0.5, 
-          name="Spatial Spill")
-
-#To do today
-#Change output to CSV row-by-row and clear memory each iteration
-#Break out the spillover and main treatment effects
+# plot_ly(results, x=spill.magnitude, y=spill.vrange, 
+#         z=baseline, type="scatter3d", mode="markers", opacity=0.5, name="Baseline")
+# 
+# add_trace(results, x=spill.magnitude, y=spill.vrange, 
+#           z=spatial.trueThreshold, 
+#           type="scatter3d",
+#           mode="markers",
+#           opacity=0.5, 
+#           name="Spatial Threshold")
+# 
+# add_trace(results, x=spill.magnitude, y=spill.vrange, 
+#           z=trueTreatment, 
+#           type="scatter3d",
+#           mode="markers",
+#           opacity=0.5, 
+#           name="True (0 Surface)")
+# 
+# add_trace(results, x=spill.magnitude, y=spill.vrange, 
+#           z=spatial.matchit.spill, 
+#           type="scatter3d",
+#           mode="markers",
+#           opacity=0.5, 
+#           name="Spatial Spill")
