@@ -3,10 +3,16 @@ library(plotly)
 viz.sims <- function(results, varH, mtitle, pre="")
 {
   results.plot <- results
+
+  
   eval(parse(text=paste("results.plot$v1 <- results.plot$",varH,sep="")))
   results.plot <- results.plot[order(results.plot$v1),]
-  ylower <- min(results.plot[paste(pre,"baseline",sep="")]) #- (2*abs(min(results.plot[paste(pre,"baseline",sep="")])))
-  yupper <- max(results.plot[paste(pre,"baseline",sep="")])#*2
+  ylower <- min(results.plot[paste(pre,"trueTreatment",sep="")]) - (2*abs(min(results.plot[paste(pre,"trueTreatment",sep="")])))
+  yupper <- max(results.plot[paste(pre,"baseline",sep="")]) 
+  if(mtitle == "ATE by Model")
+  {
+    yupper <- max(results.plot[paste(pre,"baseline",sep="")]) * 1.25
+  }
   plot(ylim=c(ylower,yupper), 
        results.plot$v1, 
        results.plot[paste(pre,"baseline",sep="")][[1]], 
@@ -31,27 +37,29 @@ viz.sims <- function(results, varH, mtitle, pre="")
   points(results.plot$v1, 
          results.plot[paste(pre,"spatial.trueThreshold",sep="")][[1]], col=rgb(1,0.5,0,alpha=0.1), pch=2, cex=0.5)
 
-  
-  lines(lowess(results.plot$v1, 
-               results.plot[paste(pre,"baseline.spill.model",sep="")][[1]]), col=rgb(0,0,0), pch=3)
-  points(results.plot$v1, 
-         results.plot[paste(pre,"baseline.spill.model",sep="")][[1]], col=rgb(0,0,0,alpha=0.1), pch=3, cex=0.5)
-  
-  lines(lowess(results.plot$v1, 
-               results.plot[paste(pre,"matchit.spill.model",sep="")][[1]]), col=rgb(0,1,1), pch=4)
-  points(results.plot$v1, 
-         results.plot[paste(pre,"matchit.spill.model",sep="")][[1]], col=rgb(0,1,1,alpha=0.1), pch=4, cex=0.5)
+  #lines(lowess(results.plot$v1, 
+  #             results.plot[paste(pre,"matchit.spill.model",sep="")][[1]]), col=rgb(0,1,1), pch=4)
+  #points(results.plot$v1, 
+  #       results.plot[paste(pre,"matchit.spill.model",sep="")][[1]], col=rgb(0,1,1,alpha=0.1), pch=4, cex=0.5)
   
   lines(lowess(results.plot$v1, 
                results.plot[paste(pre,"spatial.matchit.spill",sep="")][[1]]), col=rgb(0.5,0.5,0.5), pch=4)
   points(results.plot$v1, 
          results.plot[paste(pre,"spatial.matchit.spill",sep="")][[1]], col=rgb(0.5,0.5,0.5,alpha=0.1), pch=4, cex=0.5)
   
+  if(mtitle == "ATE by Model")
+  {
+    lines(lowess(results.plot$v1, 
+               results.plot[paste(pre,"tot.spill",sep="")][[1]]), col=rgb(0,0,0), pch=3)
+  points(results.plot$v1, 
+         results.plot[paste(pre,"tot.spill",sep="")][[1]], col=rgb(0,0,0,alpha=0.1), pch=3, cex=0.5)
+  }
+  
   legend("topleft",
          cex = 0.65,
          legend=c("Baseline LM","True ATE", "Baseline MatchIt", 
-                  "Spatial True Thresh", "Baseline LM Spill", 
-                  "Matchit Spill", "Spatial Spill"), 
+                  "Spatial True Thresh", "TOT", 
+                  "NA", "Spatial Thresh"), 
          pch=c(pch = 3, pch=1, pch=4, pch=2, pch=3, pch=4, pch=2),
          col=c(col="red", col="green", col="blue", col="orange", 
                col="black", col=109, col=144), title = "Legend")
@@ -64,6 +72,9 @@ viz.sims(results, "psill", "ATE by Model")
 viz.sims(results, "prop_acc", "ATE by Model")
 viz.sims(results, "spill.vrange", "ATE by Model")
 viz.sims(results, "caliper", "ATE by Model")
+viz.sims(results, "sample_size", "ATE by Model")
+viz.sims(results, "mod_error.magnitude", "ATE by Model")
+viz.sims(results, "tree_split_lim", "ATE by Model")
 
 viz.sims(results_out, "spill.magnitude", "Predicted Avg. Outcome")
 viz.sims(results_out, "var1.vrange", "Predicted Avg. Outcome")
@@ -100,10 +111,9 @@ dif_func <- function(results, comparison)
 results <- dif_func(results, "baseline")
 results <- dif_func(results, "baseline.matchit")
 results <- dif_func(results, "spatial.matchit.spill")
-results <- dif_func(results, "matchit.spill.model")
-results <- dif_func(results, "baseline.spill.model")
 results <- dif_func(results, "spatial.trueThreshold")
 results <- dif_func(results, "trueTreatment")
+results <- dif_func(results, "tot.spill")
 
 
 
@@ -113,6 +123,7 @@ viz.sims(results, "psill", "ATE by Model", "dif.abs.")
 viz.sims(results, "prop_acc", "ATE by Model", "dif.abs.")
 viz.sims(results, "spill.vrange", "ATE by Model", "dif.abs.")
 viz.sims(results, "caliper", "ATE by Model", "dif.abs.")
+viz.sims(results, "sample_size", "ATE by Model", "dif.abs.")
 
 viz.sims(results, "spill.magnitude", "ATE by Model", "dif.")
 viz.sims(results, "var1.vrange", "ATE by Model", "dif.")

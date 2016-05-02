@@ -2,6 +2,8 @@ library(sp)
 library(ncf)
 library(gstat)
 library(devtools)
+library(rpart)
+library(rpart.plot)
 
 detach("package:MatchIt", unload=TRUE)
 load_all("~/Desktop/Github/MatchIt/R")
@@ -42,12 +44,12 @@ ptm <- proc.time()
   
   #General Options
   # set dataframe size (number of points)
-  nrandom <- 2000
+  nrandom <- 10000
   
   #General psill
   #Note: setting this to 0 will result in no data randomization.
   #Larger values indicate more autocorrelation.
-  psill <- 200 #+ runif(1, -.95, 1)
+  psill <- 1 + runif(1, -.95, 20)
   
   # define bounding box
   minx <- -45
@@ -56,43 +58,48 @@ ptm <- proc.time()
   maxy <- 22.5
   
   #Covariate Spatial Correlation
-  var1.vrange <- 1 # runif(1, -.95, 20)
+  var1.vrange <- 1 + runif(1, -.95, 20)
   
   
   #Degree to which the covariate
   #explains the propensity to receive
   #treatment (1.0 = perfect correlation, or no error)
-  prop_acc = runif(1, 0.5, .95)
+  prop_acc = runif(1, 0.05, .95)
   
   #Spatial pattern in the PSM error, if any 
   #(vrange = 1 approximates random noise)
-  var1_error.vrange <- 0.1 #runif(1, 0.1, .95)
+  var1_error.vrange <- runif(1, 0.1, 20)
   
   #Define the spatial pattern of any model error.
   #Magnitue of error is 0-1 (0 = no error)
   mod_error.vrange <-  1.0 
-  mod_error.magnitude <- 0.0 
+  mod_error.magnitude <- runif(1, 0.1, 5)
   
   #Percent of locations which are to be defined as
   #treated
-  trt_prc = .25
+  trt_prc = runif(1, 0.2, 0.5)
   
-  #Beta coefficient for ancillary data
-  #in defining the treatment
-  beta <- 1.0 
   
   #Theta coefficient for treatment effect
   #used for defining the outcome
-  theta <- 1.0 #+ runif(1, -.95, 10)
+  theta <- runif(1, -.95, 10)
+  
+  #Beta coefficient for ancillary data
+  #in defining the treatment
+  beta <- runif(1,1,5) * theta
   
   #Spillover Range
-  spill.vrange <- 1.0 #+ runif(1, -.95, 20)
+  spill.vrange <- 1.0 + runif(1, -.95, 2)
   
   #Spillover Magnitude (relative to theta)
-  spill.magnitude <- 1 * runif(1, 0, 100) * theta
+  spill.magnitude <- 1 * runif(1, 0, 5) * theta
   
   #Caliper for Matching
   cal = runif(1, 0.25, 1.0)
+
+  sample_size = runif(1,0.05,1.0)
+  
+  tree_split_lim = sample(2:50,1) 
   
   # -----------------------------------------------------------------------------
   # Data Simulation
@@ -114,7 +121,7 @@ ptm <- proc.time()
   # -----------------------------------------------------------------------------
   #Creates a figure describing your iteration (PSM vs. observed and parameterized spillovers
   #and maps).
-  #source("/home/aiddata/Desktop/Github/MatchIt/demo/test.spatial.figures.R")
+ # source("/home/aiddata/Desktop/Github/MatchIt/demo/test.spatial.figures.R")
   
   
   # -----------------------------------------------------------------------------
@@ -133,15 +140,16 @@ ptm <- proc.time()
   nospill.t.pred@data <- nospill.t.pred@data[1]
   nospill.t.pred@data$trueTreatment <- theta
   
+  model_dta <- spdf[sample(nrow(spdf), (nrandom * sample_size)), ]
   
   #No Matching
-  baseline <- lm(modelOutcome ~ treatment.status +  modelVar, data=spdf@data)
+  baseline <- lm(modelOutcome ~ treatment.status +  modelVar, data=model_dta@data)
   outcome.predictions@data$baseline <- predict(baseline, newdata=spdf@data)
   treatment.predictions@data$baseline <- summary(baseline)$coefficients[2]
   nospill.t.pred@data$baseline <- summary(baseline)$coefficients[2]
     
   #Baseline for Comparison
-  baseline.matchit <- matchit(treatment.status ~ modelVar, data=spdf@data,
+  baseline.matchit <- matchit(treatment.status ~ modelVar, data= model_dta@data,
                     method="nearest", distance="logit", 
                     caliper=cal, calclosest=FALSE, calrandom=FALSE)
   
@@ -157,7 +165,7 @@ ptm <- proc.time()
   spatial.opts <- list(decay.model = "threshold",
                        threshold = spill.vrange)
 
-  spatial.trueThreshold <- matchit(treatment.status ~ modelVar, data=spdf,
+  spatial.trueThreshold <- matchit(treatment.status ~ modelVar, data= model_dta,
                     method = "nearest", distance = "logit", 
                     caliper=cal, calclosest=FALSE, calrandom=FALSE,
                     spatial.options=spatial.opts)
@@ -176,13 +184,13 @@ ptm <- proc.time()
 
   
   #Propensity Correlogram
-  p_cor_spdf <- spdf
+  p_cor_spdf <- model_dta
   p_cor_spdf$m1.pscore <- baseline.matchit$distance
   correlog.pscore.spillover <- correlog(x=p_cor_spdf@coords[, 1],
                                         y=p_cor_spdf@coords[, 2],
-                                        z=p_cor_spdf$m1.pscore,
+                                        z=p_cor_spdf$treatment.status,
                                         increment=500,
-                                        latlon=TRUE, na.rm=TRUE, resamp=2,
+                                        latlon=TRUE, na.rm=TRUE, resamp=5,
                                         quiet=FALSE)
   
   pscore.spillover.model.dta <- data.frame(
@@ -194,13 +202,15 @@ ptm <- proc.time()
                                data=pscore.spillover.model.dta)
   
   estimated.spillover.weights <- c()
-  for (k in 1:nrandom) {
+  for (k in 1:length(p_cor_spdf)) {
     
-    correlog.dist <- spDists(spdf[k, ]@coords, spdf@coords, longlat=TRUE)
+    correlog.dist <- spDists(p_cor_spdf[k, ]@coords, p_cor_spdf@coords, longlat=TRUE)
     
     
     correlog.neighbors <- correlog.dist > 0
-    correlog.treated <- spdf$treatment.status
+    correlog.treated <- p_cor_spdf$treatment.status
+    
+    
     
     correlog.newdata <- data.frame(
       mean.of.class = c(correlog.dist)
@@ -217,55 +227,75 @@ ptm <- proc.time()
   
   p_cor_spdf$spillover.est <- estimated.spillover.weights
   
-  #Baseline with Spillover Term
-  baseline.spill.model <- lm(modelOutcome ~ treatment.status +  modelVar + spillover.est, 
-                       data=p_cor_spdf)
-  
-  outcome.predictions@data$baseline.spill.model <- predict(baseline.spill.model, 
-                                                           newdata=p_cor_spdf@data)
-  treatment.predictions@data$baseline.spill.model <- 
-    ((summary(baseline.spill.model)$coefficients[2] * nrandom) + 
-    (summary(baseline.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
-    nrandom
-  
-  nospill.t.pred@data$baseline.spill.model <- summary(baseline.spill.model)$coefficients[2]
-  
-  #Baseline Matchit with Spillover
-  baseline.matchit.spill <- matchit(treatment.status ~ modelVar, data=p_cor_spdf@data,
-                              method="nearest", distance="logit", 
-                              caliper=cal, calclosest=FALSE, calrandom=FALSE)
-  
-  baseline.matchit.spill.model <- lm(modelOutcome ~ treatment.status +  modelVar + spillover.est, 
-                             data=match.data(baseline.matchit.spill))
-  
-  outcome.predictions@data$matchit.spill.model <- predict(baseline.matchit.spill.model, 
-                                                           newdata=p_cor_spdf@data)
-  treatment.predictions@data$matchit.spill.model <- 
-    ((summary(baseline.matchit.spill.model)$coefficients[2] * nrandom) + 
-       (summary(baseline.matchit.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
-    nrandom
-  
-  nospill.t.pred@data$matchit.spill.model <- summary(baseline.matchit.spill.model)$coefficients[2]
-  
-  #Spatial Matchit with Spillover
+  #Spatial Matchit
   spatial.opts <- list(decay.model = "threshold",
-                       threshold = (correlog.pscore.spillover$x.intercept+1))
+                       threshold = correlog.pscore.spillover$x.intercept+1)#(correlog.pscore.spillover$x.intercept+1))
   print(correlog.pscore.spillover$x.intercept)
   spatial.matchit.spill <- matchit(treatment.status ~ modelVar, data=p_cor_spdf@data,
                                     method="nearest", distance="logit", 
                                     caliper=cal, calclosest=FALSE, calrandom=FALSE)
   
-  spatial.matchit.spill.model <- lm(modelOutcome ~ treatment.status +  modelVar + spillover.est, 
+  spatial.matchit.spill.model <- lm(modelOutcome ~ treatment.status +  modelVar, 
                                      data=match.data(spatial.matchit.spill))
   
   outcome.predictions@data$spatial.matchit.spill <- predict(spatial.matchit.spill.model, 
-                                                          newdata=p_cor_spdf@data)
+                                                          newdata=spdf@data)
   treatment.predictions@data$spatial.matchit.spill <- 
-    ((summary(spatial.matchit.spill.model)$coefficients[2] * nrandom) + 
-       (summary(spatial.matchit.spill.model)$coefficients[4] * p_cor_spdf@data$spillover.est)) / 
+    ((summary(spatial.matchit.spill.model)$coefficients[2] * nrandom)) / 
     nrandom
   
   nospill.t.pred@data$spatial.matchit.spill <- summary(spatial.matchit.spill.model)$coefficients[2]
+  
+  p_cor_spdf@data["coord1"] <- coordinates(p_cor_spdf)[,1]
+  p_cor_spdf@data["coord2"] <- coordinates(p_cor_spdf)[,2]
+  
+  #TOT - Non Random Forest
+  trans_dta <- p_cor_spdf
+  trans_dta <- trans_dta[(trans_dta@data$m1.pscore != 0 & 
+                            trans_dta@data$m1.pscore != 1),]
+  
+  transOutcome <- list(rep(0,nrow(trans_dta)))
+  
+  for(i in 1:nrow(p_cor_spdf))
+  {
+    if(trans_dta$treatment.status[i] == 1)
+    {
+      transOutcome[i] = trans_dta@data$modelOutcome[i] / trans_dta@data$m1.pscore[i]
+    }
+    else
+    {
+      transOutcome[i] = trans_dta@data$modelOutcome[i] / (1-trans_dta@data$m1.pscore[i])
+    }
+  }
+  trans_dta@data$transOutcome <- unlist(transOutcome)
+  
+  tot.fit.spill <- rpart(transOutcome ~ modelVar + coord1 + coord2,
+                         data = trans_dta@data,
+                         control=rpart.control(cp=0, minsplit=tree_split_lim),
+                         method="anova")
+  cpbest <- tot.fit.spill$cptable[which.min(tot.fit.spill$cptable[,"xerror"]),"CP"]
+  
+  tot.fit.spillB <- rpart(transOutcome ~ modelVar + coord1 + coord2,
+                          data = trans_dta@data,
+                          control=rpart.control(cp=cpbest, minsplit=tree_split_lim),
+                          method="anova")
+  
+  spdf@data["coord1"] <- coordinates(spdf)[,1]
+  spdf@data["coord2"] <- coordinates(spdf)[,2]
+  
+  res <- predict(tot.fit.spillB, newdata=spdf@data)
+  
+  
+  
+  
+  #Totoal Outcome
+  outcome.predictions@data$tot.spill <- NA
+
+  treatment.predictions@data$tot.spill <-  res * treatment.predictions@data$treatment.status 
+
+  nospill.t.pred@data$tot.spill <- NA
+
+  
   #Save Summary Results
   
   for(i in 3:length(nospill.t.pred@data))
@@ -316,6 +346,9 @@ ptm <- proc.time()
     results["var1_error.vrange"] <- NA
     results["theta"] <- NA
     results["caliper"] <- NA
+    results["sample_size"] <- NA
+    results["tree_split_lim"] <- NA
+    
     
     results_out["spill.magnitude"] <- NA
     results_out["psill"] <- NA
@@ -328,6 +361,8 @@ ptm <- proc.time()
     results_out["var1_error.vrange"] <- NA
     results_out["theta"] <- NA
     results_out["caliper"] <- NA
+    results_out["sample_size"] <- NA
+    results_out["tree_split_lim"] <- NA
     
     results_nospill["spill.magnitude"] <- NA
     results_nospill["psill"] <- NA
@@ -340,6 +375,8 @@ ptm <- proc.time()
     results_nospill["var1_error.vrange"] <- NA
     results_nospill["theta"] <- NA
     results_nospill["caliper"] <- NA
+    results_nospill["sample_size"] <- NA
+    results_nospill["tree_split_lim"] <- NA
     
     
   }
@@ -354,6 +391,8 @@ ptm <- proc.time()
   results["theta"][p,] <- theta
   results["var1_error.vrange"][p,] <- var1_error.vrange
   results["caliper"][p,] <- cal
+  results["sample_size"][p,] <- sample_size
+  results["tree_split_lim"][p,] <- tree_split_lim
   
   results_out["spill.magnitude"][p,] <- spill.magnitude
   results_out["psill"][p,] <- psill
@@ -366,6 +405,8 @@ ptm <- proc.time()
   results_out["theta"][p,] <- theta
   results_out["var1_error.vrange"][p,] <- var1_error.vrange
   results_out["caliper"][p,] <- cal
+  results_out["sample_size"][p,] <- sample_size
+  results_out["tree_split_lim"][p,] <- tree_split_lim
   
   results_nospill["spill.magnitude"][p,] <- spill.magnitude
   results_nospill["psill"][p,] <- psill
@@ -378,6 +419,8 @@ ptm <- proc.time()
   results_nospill["theta"][p,] <- theta
   results_nospill["var1_error.vrange"][p,] <- var1_error.vrange
   results_nospill["caliper"][p,] <- cal
+  results_nospill["sample_size"][p,] <- sample_size
+  results_nospill["tree_split_lim"][p,] <- tree_split_lim
 
   
 #Compare Maps
