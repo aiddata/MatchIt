@@ -1,14 +1,9 @@
-rm(list = ls())
 library(sp)
 library(ncf)
 library(gstat)
 library(devtools)
 library(rpart)
 library(rpart.plot)
-library(Rcpp)
-Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
-Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp("/home/aiddata/Desktop/Github/MatchIt/demo/splitc.cpp")
 
 #detach("package:MatchIt", unload=TRUE)
 #load_all("~/Desktop/Github/MatchIt/R")
@@ -17,9 +12,9 @@ install_github("itpir/matchit")
 library(MatchIt)
 
 
+rm(list = ls())
 
-
-iterations <- 25
+iterations <- 2
 
 results <- data.frame(
   id=c(1:iterations)
@@ -36,6 +31,7 @@ results_nospill <- data.frame(
 
 
 ptm <- proc.time()
+
   for(p in 1:iterations)
 {
 
@@ -48,7 +44,7 @@ ptm <- proc.time()
   
   #General Options
   # set dataframe size (number of points)
-  nrandom <- 2000
+  nrandom <- 1000
   
   #General psill
   #Note: setting this to 0 will result in no data randomization.
@@ -77,20 +73,20 @@ ptm <- proc.time()
   #Define the spatial pattern of any model error.
   #Magnitue of error is 0-1 (0 = no error)
   mod_error.vrange <-  1.0 
-  mod_error.magnitude <- runif(1, 0.1, 2)
+  mod_error.magnitude <- runif(1, 0.1, 5)
   
   #Percent of locations which are to be defined as
   #treated
-  trt_prc = runif(1, 0.45, 0.5)
+  trt_prc = runif(1, 0.2, 0.5)
   
   
   #Theta coefficient for treatment effect
   #used for defining the outcome
-  theta <- 1#runif(1, -.95, 10)
+  theta <- runif(1, -.95, 10)
   
   #Beta coefficient for ancillary data
   #in defining the treatment
-  beta <- 1#runif(1,1,5) * theta
+  beta <- runif(1,1,5) * theta
   
   #Spillover Range
   spill.vrange <- 1.0 + runif(1, -.95, 2)
@@ -99,7 +95,7 @@ ptm <- proc.time()
   spill.magnitude <- 1 * runif(1, 0, 3)
   
   #Caliper for Matching
-  cal = .5
+  cal = runif(1, 0.25, 1.0)
 
   sample_size = runif(1,0.05,1.0)
   
@@ -137,8 +133,8 @@ ptm <- proc.time()
   
   treatment.predictions <- spdf
   treatment.predictions@data <- treatment.predictions@data[c(1,6,7)]
-  treatment.predictions@data$trueTreatment <- (treatment.predictions@data$treatment.status)*
-                                               theta + treatment.predictions$trueSpill
+  treatment.predictions@data$trueTreatment <- (treatment.predictions@data$treatment.status *
+                                               theta) + treatment.predictions$trueSpill
   
   nospill.t.pred <- spdf
   nospill.t.pred@data <- nospill.t.pred@data[1]
@@ -234,7 +230,7 @@ ptm <- proc.time()
   #Spatial Matchit
   spatial.opts <- list(decay.model = "threshold",
                        threshold = correlog.pscore.spillover$x.intercept+1)#(correlog.pscore.spillover$x.intercept+1))
-  #print(correlog.pscore.spillover$x.intercept)
+  print(correlog.pscore.spillover$x.intercept)
   spatial.matchit.spill <- matchit(treatment.status ~ modelVar, data=p_cor_spdf@data,
                                     method="nearest", distance="logit", 
                                     caliper=cal, calclosest=FALSE, calrandom=FALSE)
@@ -290,42 +286,7 @@ ptm <- proc.time()
   res <- predict(tot.fit.spillB, newdata=spdf@data)
   
   # Add by Jianing 
-  db = spdf@data
-  tree2 = tot.fit.spillB
-  tree2$frame$yval = as.numeric(rownames(tree2$frame))
-  res2 = predict(tree2,newdata=spdf@data)
-  
-  leaf = unique(tot.fit.spillB$where)
-  res3 = 0
-  for(i in 1:length(leaf)){
-    
-    treatcount = 0
-    untreatcount = 0
-    count = 0
-    temp  = 0
-    
-    for(j in 1:nrow(db)){
-      if(res2[j] == leaf[i]){
-        temp = c(temp,j)
-        count = count + 1
-        if(db$treatment.status[j] == 1){
-          treatcount = treatcount + 1
-        }
-        if(db$treatment.status[j] == 0){
-          untreatcount = untreatcount + 1
-        }
-      }
-      
-    }
-    
-    if(count == treatcount | count == untreatcount ){
-      temp = temp[-1]
-      res3 = c(res3,temp)
-    }
-  }
-  
-  res_leaf2prune = res3[-1]
-  #res[res_leaf2prune] = NA
+ 
   
   ## end
   
@@ -336,108 +297,7 @@ ptm <- proc.time()
   treatment.predictions@data$tot.spill <-  res * treatment.predictions@data$treatment.status 
 
   nospill.t.pred@data$tot.spill <- NA
-  
-  
-  
-  #CT
-  source("/home/aiddata/Desktop/Github/MatchIt/demo/CT_functions.R")
-  alist <- list(eval=ctev, split=ctsplit, init=ctinit)
-  
-  #trans_dta
-  dbb = trans_dta@data
-  k = 10 
-  n = dim(dbb)[1]
-  #sample_size = floor(n)
-  #ridx = sample(1:n,sample_size,replace=FALSE)
-  #crxvdata= dbb[ridx,]
-  crxvdata = dbb
-  crxvdata$id <- sample(1:k, nrow(crxvdata), replace = TRUE)
-  list = 1:k
-  fit1 = rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
-               crxvdata,
-                control = rpart.control(cp = 0,minsplit = tree_split_lim),
-                method=alist)
-  fit = data.matrix(fit1$frame)
-  index = as.numeric(rownames(fit1$frame))
-  tsize = dim(fit1$frame[which(fit1$frame$var=="<leaf>"),])[1]
-  
-  alpha = 0
-  alphalist = 0
-  alphalist = cross_validate(fit, index,alphalist)
-  
-  res = rep(0,length(alphalist)-1)
-  for(j in 2:(length(alphalist)-1)){
-    res[j] = sqrt(alphalist[j]*alphalist[j+1])
-  }
-  
-  alphacandidate = res
-  alphaset = rep(0,length(alphacandidate))
-  errset = rep(0,length(alphacandidate))
-  tsize = 0
-  for(l in 1:length(alphacandidate)){
-    alpha = alphacandidate[l]
-    error = 0
-    treesize = 0
-    for (i in 1:k){
-      trainingset <- subset(crxvdata, id %in% list[-i])
-      testset <- subset(crxvdata, id %in% c(i))
-      fit1 = rpart (cbind(modelOutcome,treatment.status,m1.pscore,transOutcome)  ~ modelVar + coord1 + coord2,
-                    trainingset,
-                    control = rpart.control(cp = alpha,minsplit = tree_split_lim),
-                    method=alist)
-      
-      if(dim(fit1$frame)[1] == 1){
-        error = 0
-        break
-      }
-      
-      else{
-        treesize = treesize + dim(fit1$frame[which(fit1$frame$var=="<leaf>"),])[1]
-        pt = predict(fit1,testset,type = "matrix")
-        y = data.frame(pt)
-        val = data.matrix(y)
-        idx = as.numeric(rownames(y))
-        dbidx = as.numeric(rownames(dbb))
-        
-        for(pid in 1:(dim(y)[1])){
-          id = match(idx[pid],dbidx)
-          error = error + (crxvdata$transOutcome[id] - val[pid])^2
-          #print(error)
-        }
-      }
-      
-    }
-    
-    tsize = c(tsize,treesize/k)
-    if(error == 0){
-      errset[l] = 1000000
-    }
-    else{
-      errset[l] = error/k
-    }
-    msg = paste(l,": ",errset[l]*k,sep="")
-    #print(msg)
-  }
-  
-  tsize = tsize[-1]
-  alpha_res = alphacandidate[which.min(errset)]
-  fit_ctpred <- rpart(cbind(modelOutcome,treatment.status,m1.pscore,transOutcome) ~ modelVar + coord1 + coord2,
-                crxvdata, control=rpart.control(minsplit=tree_split_lim,cp=alpha_res),
-                method=alist)
-  #prp(fit_ctpred)
-  #res = rep(0,length(alphalist)-1)
-  #for(j in 2:(length(alphalist)-1)){
-  #  res[j] = sqrt(alphalist[j]*alphalist[j+1])
-  #}
-  
-  #Total Outcome - CT
-  outcome.predictions@data$ct.spill <- NA
-  
-  treatment.predictions@data$ct.spill <-  predict(fit_ctpred,newdata=spdf@data) * treatment.predictions@data$treatment.status 
-  print("CT Nodes:")
-  print(length(unique(fit_ctpred$where)))
-  
-  nospill.t.pred@data$ct.spill <- NA
+
   
   #Save Summary Results
   
@@ -449,7 +309,7 @@ ptm <- proc.time()
       results_nospill[names(nospill.t.pred@data)[i]] <- NA
       results_nospill["trueTreatment"] <- NA
     }
-    results_nospill[names(nospill.t.pred@data)[i]][p,] <- sum(nospill.t.pred@data[,i]) / (nrandom*trt_prc)
+    results_nospill[names(nospill.t.pred@data)[i]][p,] <- mean(nospill.t.pred@data[,i])
     results_nospill["trueTreatment"][p,] <- theta
   }
   
@@ -460,8 +320,8 @@ ptm <- proc.time()
       results[names(treatment.predictions@data)[i]] <- NA
       results["trueTreatment"] <- NA
     }
-    results[names(treatment.predictions@data)[i]][p,] <- sum(treatment.predictions@data[,i],na.rm=T) / (nrandom*trt_prc)
-    results["trueTreatment"][p,] <- sum(treatment.predictions@data$trueTreatment) / (nrandom*trt_prc)
+    results[names(treatment.predictions@data)[i]][p,] <- mean(treatment.predictions@data[,i])
+    results["trueTreatment"][p,] <- mean(treatment.predictions@data$trueTreatment)
   }
 
   for(i in 3:length(outcome.predictions@data))
@@ -471,8 +331,8 @@ ptm <- proc.time()
       results_out[names(outcome.predictions@data)[i]] <- NA
       results_out["trueTreatment"] <- NA
     }
-    results_out[names(outcome.predictions@data)[i]][p,] <- sum(outcome.predictions@data[,i]) / (nrandom*trt_prc)
-    results_out["trueTreatment"][p,] <- sum(treatment.predictions@data$trueTreatment) / (nrandom*trt_prc)
+    results_out[names(outcome.predictions@data)[i]][p,] <- mean(outcome.predictions@data[,i])
+    results_out["trueTreatment"][p,] <- mean(treatment.predictions@data$trueTreatment)
     }
 
   #Save relevant parameters

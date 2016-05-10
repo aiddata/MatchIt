@@ -1,3 +1,23 @@
+#Folder that contains CSVs to be visualized
+res_folder <- "/mnt/sc/AlphaSims"
+files <- list.files(path=res_folder, full.names=T, recursive=FALSE)
+
+print(length(files))
+
+for(path in 1:length(files))
+{
+  if(path == 1)
+  {
+    full_df <- read.csv(files[path])
+  }
+  else
+  {
+    full_df <-  rbind(full_df,read.csv(files[path]))
+  }
+}
+
+results <- full_df
+
 #Visualization of Simulation results
 library(plotly)
 viz.sims <- function(results, varH, mtitle, pre="")
@@ -33,9 +53,9 @@ viz.sims <- function(results, varH, mtitle, pre="")
          results.plot[paste(pre,"trueTreatment",sep="")][[1]], col=rgb(0,1,0,alpha=0.1), pch=4, cex=0.5)
   
   lines(lowess(results.plot$v1, 
-               results.plot[paste(pre,"spatial.trueThreshold",sep="")][[1]]), col=rgb(1,0.5,0), pch=2)
+               results.plot[paste(pre,"ct.spill",sep="")][[1]]), col=rgb(1,0.5,0), pch=2)
   points(results.plot$v1, 
-         results.plot[paste(pre,"spatial.trueThreshold",sep="")][[1]], col=rgb(1,0.5,0,alpha=0.1), pch=2, cex=0.5)
+         results.plot[paste(pre,"ct.spill",sep="")][[1]], col=rgb(1,0.5,0,alpha=0.1), pch=2, cex=0.5)
 
   #lines(lowess(results.plot$v1, 
   #             results.plot[paste(pre,"matchit.spill.model",sep="")][[1]]), col=rgb(0,1,1), pch=4)
@@ -58,7 +78,7 @@ viz.sims <- function(results, varH, mtitle, pre="")
   legend("topleft",
          cex = 0.65,
          legend=c("Baseline LM","True ATE", "Baseline MatchIt", 
-                  "Spatial True Thresh", "TOT", 
+                  "CT", "TOT", 
                   "NA", "Spatial Thresh"), 
          pch=c(pch = 3, pch=1, pch=4, pch=2, pch=3, pch=4, pch=2),
          col=c(col="red", col="green", col="blue", col="orange", 
@@ -68,7 +88,6 @@ viz.sims <- function(results, varH, mtitle, pre="")
 #Variable Spillover Magnitude
 viz.sims(results, "spill.magnitude", "ATE by Model")
 viz.sims(results, "var1.vrange", "ATE by Model")
-viz.sims(results, "psill", "ATE by Model")
 viz.sims(results, "prop_acc", "ATE by Model")
 viz.sims(results, "spill.vrange", "ATE by Model")
 viz.sims(results, "caliper", "ATE by Model")
@@ -76,20 +95,20 @@ viz.sims(results, "sample_size", "ATE by Model")
 viz.sims(results, "mod_error.magnitude", "ATE by Model")
 viz.sims(results, "tree_split_lim", "ATE by Model")
 
-viz.sims(results_out, "spill.magnitude", "Predicted Avg. Outcome")
-viz.sims(results_out, "var1.vrange", "Predicted Avg. Outcome")
-viz.sims(results_out, "psill", "Predicted Avg. Outcome")
-viz.sims(results_out, "prop_acc", "Predicted Avg. Outcome")
-viz.sims(results_out, "spill.vrange", "Predicted Avg. Outcome")
-viz.sims(results_out, "caliper", "Predicted Avg. Outcome")
+#viz.sims(results_out, "spill.magnitude", "Predicted Avg. Outcome")
+#viz.sims(results_out, "var1.vrange", "Predicted Avg. Outcome")
+#viz.sims(results_out, "psill", "Predicted Avg. Outcome")
+#viz.sims(results_out, "prop_acc", "Predicted Avg. Outcome")
+#viz.sims(results_out, "spill.vrange", "Predicted Avg. Outcome")
+#viz.sims(results_out, "caliper", "Predicted Avg. Outcome")
 
-viz.sims(results_nospill, "spill.magnitude", "Predicted Theta")
-viz.sims(results_nospill, "var1.vrange", "Predicted Theta") #5
-viz.sims(results_nospill, "psill", "Predicted Theta") #200
-viz.sims(results_nospill, "prop_acc", "Predicted Theta") #0.95
-viz.sims(results_nospill, "spill.vrange", "Predicted Theta") #1.0
-viz.sims(results_nospill, "caliper", "Predicted Theta")
-viz.sims(results_nospill, "theta", "Predicted Theta") #1.0
+#viz.sims(results_nospill, "spill.magnitude", "Predicted Theta")
+#viz.sims(results_nospill, "var1.vrange", "Predicted Theta") #5
+#viz.sims(results_nospill, "psill", "Predicted Theta") #200
+#viz.sims(results_nospill, "prop_acc", "Predicted Theta") #0.95
+#viz.sims(results_nospill, "spill.vrange", "Predicted Theta") #1.0
+#viz.sims(results_nospill, "caliper", "Predicted Theta")
+#viz.sims(results_nospill, "theta", "Predicted Theta") #1.0
 
 
 #Compare to Truth
@@ -114,23 +133,24 @@ results <- dif_func(results, "spatial.matchit.spill")
 results <- dif_func(results, "spatial.trueThreshold")
 results <- dif_func(results, "trueTreatment")
 results <- dif_func(results, "tot.spill")
+results <- dif_func(results, "ct.spill")
 
 
 
-viz.sims(results, "spill.magnitude", "ATE by Model", "dif.abs.")
-viz.sims(results, "var1.vrange", "ATE by Model", "dif.abs.")
-viz.sims(results, "psill", "ATE by Model", "dif.abs.")
-viz.sims(results, "prop_acc", "ATE by Model", "dif.abs.")
-viz.sims(results, "spill.vrange", "ATE by Model", "dif.abs.")
-viz.sims(results, "caliper", "ATE by Model", "dif.abs.")
-viz.sims(results, "sample_size", "ATE by Model", "dif.abs.")
+viz.sims(results, "spill.magnitude", "Abs Dif ATE by Model", "dif.abs.")
+viz.sims(results, "var1.vrange", "Abs Dif ATE by Model", "dif.abs.")
+viz.sims(results, "psill", "Abs Dif ATE by Model", "dif.abs.")
+viz.sims(results, "prop_acc", "Abs Dif ATE by Model", "dif.abs.")
+viz.sims(results, "spill.vrange", "Abs Dif ATE by Model", "dif.abs.")
+viz.sims(results, "caliper", "Abs Dif ATE by Model", "dif.abs.")
+viz.sims(results, "sample_size", "Abs Dif ATE by Model", "dif.abs.")
 
-viz.sims(results, "spill.magnitude", "ATE by Model", "dif.")
-viz.sims(results, "var1.vrange", "ATE by Model", "dif.")
-viz.sims(results, "psill", "ATE by Model", "dif.")
-viz.sims(results, "prop_acc", "ATE by Model", "dif.")
-viz.sims(results, "spill.vrange", "ATE by Model", "dif.")
-viz.sims(results, "caliper", "ATE by Model", "dif.")
+#viz.sims(results, "spill.magnitude", "ATE by Model", "dif.")
+#viz.sims(results, "var1.vrange", "ATE by Model", "dif.")
+#viz.sims(results, "psill", "ATE by Model", "dif.")
+#viz.sims(results, "prop_acc", "ATE by Model", "dif.")
+#viz.sims(results, "spill.vrange", "ATE by Model", "dif.")
+#viz.sims(results, "caliper", "ATE by Model", "dif.")
 
 
 

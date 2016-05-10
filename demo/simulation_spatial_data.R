@@ -1,3 +1,4 @@
+
 # -----------------------------------------------------------------------------
 #Generating Dataframe
 # -----------------------------------------------------------------------------
@@ -29,7 +30,7 @@ coordinates(spdf) <- c("longitude", "latitude")
 
 # Define the spatial correlation of the x-variable
 var.g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
-                     model=vgm(psill=psill, model="Sph", var1.vrange),
+                     model=vgm(psill=xvar_psill, model="Sph", var1.vrange),
                      nmax=20)
 
 # make simulations based on the gstat object
@@ -43,7 +44,7 @@ spdf@data$trueVar <- var.sim$sim1
 
 # Define the spatial correlation of the x-variable
 var.error.g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
-                           model=vgm(psill=psill, model="Sph", var1_error.vrange),
+                           model=vgm(psill=xvar_error_psill, model="Sph", var1_error.vrange),
                            nmax=20)
 
 # make simulations based on the gstat object
@@ -58,7 +59,7 @@ spdf@data$modelVar <- (var.error.sim$sim1 * (1-prop_acc)) + var.sim$sim1
 
 # Define the spatial correlation of the x-variable
 mod.error.g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
-                           model=vgm(psill=psill, model="Sph", mod_error.vrange),
+                           model=vgm(psill=mod_error_psill, model="Sph", mod_error.vrange),
                            nmax=20)
 
 # make simulations based on the gstat object
@@ -83,7 +84,7 @@ spdf$treatment.status = treatment.binary
 
 # Define the spatial spillover variogram
 trt.spillover <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=1,
-                       model=vgm(psill=psill, model="Sph", spill.vrange),
+                       model=vgm(psill=trt_spill_sill, model="Sph", spill.vrange),
                        nmax=20)
 trt.spillover.sim <- predict(trt.spillover, newdata=spdf, nsim=1)
 vgm.spillover <- variogram(sim1~1, trt.spillover.sim, covariogram=TRUE)
