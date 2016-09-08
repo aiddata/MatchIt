@@ -14,7 +14,7 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
   print("Setting distances")
   spatial.data@data$distance <- distance
   print("Treat Distance")
-  names(distance[treat == 1])
+  print(names(distance[treat == 1]))
 
   treated <- spatial.data[names(distance[treat == 1]),]
   untreated <- spatial.data[names(distance[treat == 0]),]
