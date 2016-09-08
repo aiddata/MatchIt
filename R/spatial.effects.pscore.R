@@ -11,11 +11,11 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
 
   # Select the treated being analyzed to calculate distance penalties from
   # treated_unit <- spatial.data[rownames(spatial.data@data)==t.iter.label,]
+
   spatial.data@data$distance <- distance
 
-
-  treated <- spatial.data[treat == 1,]
-  untreated <- spatial.data[treat == 0,]
+  treated <- spatial.data[names(distance[treat == 1]),]
+  untreated <- spatial.data[names(distance[treat == 0]),]
 
   trt.matrix <- matrix(treated@data$distance, nrow=length(treated),
                        ncol=length(untreated), byrow=FALSE)
