@@ -4,8 +4,8 @@ check.is.spatial <- function(data) {
 
   slots <- slotNames(data)
 
-  if (class(data) != "data.frame" && "data" %in% slots &&
-      "coords" %in% slots && "bbox" %in% slots && "proj4string" %in% slots) {
+  if (class(data) != "data.frame" && "data" %in% slots 
+      && "bbox" %in% slots && "proj4string" %in% slots) {
 
     is.spatial <- TRUE
 
