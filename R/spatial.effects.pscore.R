@@ -15,6 +15,10 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
   spatial.data@data$distance <- distance
   print("Checking Class")
   print(class(spatial.data))
+  print("Treat")
+  print(treat)
+  print("Distance")
+  print(names(distance))
 
   treated <- spatial.data[names(distance[treat == 1]),]
   untreated <- spatial.data[names(distance[treat == 0]),]
