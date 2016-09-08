@@ -153,6 +153,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # ---------------------------------------------------------------------------
   # get matrix for caliper
   if (is.spatial == TRUE && !is.null(distance) && caliper != 0) {
+    print(in.sample)
     print(distance[in.sample == 1])
     print(row.names(spatial.data))
     caliper.vector <- spatial.effects.pscore.caliper(
