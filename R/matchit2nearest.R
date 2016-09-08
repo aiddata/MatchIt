@@ -13,6 +13,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     spatial.decay.function <- distance[[3]]
     spatial.data <- distance[[2]]
     distance <- distance[[1]]
+    print(length(distance))
   } else {
     is.spatial <- FALSE
   }

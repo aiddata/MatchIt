@@ -195,6 +195,7 @@ matchit <- function(formula, data, method="nearest", distance="logit",
       # print(correlogram_data)
       print("Plotting correlogram and x-int (spatial thresh) for PSM dist")
       plot.correlog(correlogram_data)
+      print("Estimated Threshold (km):")
       print(spatial.options$threshold)
 
     }
