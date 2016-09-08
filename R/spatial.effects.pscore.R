@@ -11,18 +11,9 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
 
   # Select the treated being analyzed to calculate distance penalties from
   # treated_unit <- spatial.data[rownames(spatial.data@data)==t.iter.label,]
-  print("Setting distances")
   spatial.data@data$distance <- distance
-  print("Treat Distance")
-  print(distance[treat==1])
-  print("--")
-  print(names(distance[treat == 1]))
-  print("==")
-  print(length(spatial.data[[1]]))
-  print("Names")
-  print(names(spatial.data))
-  print(rownames(spatial.data))
-  print(colnames(spaital.data))
+
+
   treated <- spatial.data[treat == 1,]
   untreated <- spatial.data[treat == 0,]
 
