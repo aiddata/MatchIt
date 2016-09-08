@@ -19,7 +19,10 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
   print(names(distance[treat == 1]))
   print("==")
   print(length(spatial.data[[1]]))
+  print("Names")
   print(names(spatial.data))
+  print(rownames(spatial.data))
+  print(colnames(spaital.data))
   treated <- spatial.data[names(distance[treat == 1]),]
   untreated <- spatial.data[names(distance[treat == 0]),]
 
