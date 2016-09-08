@@ -69,14 +69,25 @@ spatial.effects.pscore.deviation <- function(spatial.threshold,
                                              deviation, t.iter.label) {
 
   # Select the treated being analyzed to calculate distance penalties from
-  treated.unit <- spatial.data[rownames(spatial.data@data) == t.iter.label, ]
+  # treated.unit <- spatial.data[rownames(spatial.data@data) == t.iter.label, ]
+
+  # treated.units <- spatial.data[spatial.data$treament.status == 1, ]
+
 
   # Identify candidates to match with
-  pair.candidates <- spatial.data[names(deviation),]
-  pair.candidates@data$unstd_deviation <- deviation
+  control.candidates <- spatial.data[names(deviation), ]
+  control.candidates$unstd.deviation <- deviation
 
   # Calculate the geographic distances between points
-  geog.dist.vector <- spDistsN1(pair.candidates, treated.unit, longlat=TRUE)
+  # geog.dist.vector <- spDistsN1(control.candidates, treated.unit, longlat=TRUE)
+
+  # geog.dist.vector <- c()
+  # for (i in 1:nrow(control.candidates)){
+  #   tmp.control <- control.candidates[1, ]
+  #   geog.dist.vector[i] <- min(spDistsN1(treated.units, tmp.control, longlat=TRUE))
+  # }
+
+  geog.dist.vector <- control.candidates$geog.dist.vector
 
   # Permute the geographic distances by the spatial distance-decay function.
   spatial.weights <- run.distance.decay(thresh=spatial.threshold,
@@ -89,3 +100,6 @@ spatial.effects.pscore.deviation <- function(spatial.threshold,
   return(spatial.weighted.pscores)
 
 }
+
+
+
