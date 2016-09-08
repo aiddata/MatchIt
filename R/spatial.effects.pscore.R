@@ -23,8 +23,8 @@ spatial.effects.pscore.caliper <- function(spatial.threshold,
   print(names(spatial.data))
   print(rownames(spatial.data))
   print(colnames(spaital.data))
-  treated <- spatial.data[names(distance[treat == 1]),]
-  untreated <- spatial.data[names(distance[treat == 0]),]
+  treated <- spatial.data[treat == 1,]
+  untreated <- spatial.data[treat == 0,]
 
   trt.matrix <- matrix(treated@data$distance, nrow=length(treated),
                        ncol=length(untreated), byrow=FALSE)
