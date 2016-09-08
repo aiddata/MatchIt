@@ -13,7 +13,6 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
     spatial.decay.function <- distance[[3]]
     spatial.data <- distance[[2]]
     distance <- distance[[1]]
-    print(length(distance))
   } else {
     is.spatial <- FALSE
   }
@@ -154,6 +153,7 @@ matchit2nearest <-  function(treat, X, data, distance, discarded,
   # ---------------------------------------------------------------------------
   # get matrix for caliper
   if (is.spatial == TRUE && !is.null(distance) && caliper != 0) {
+    print(distance[in.sample == 1])
     caliper.vector <- spatial.effects.pscore.caliper(
                         spatial.threshold, spatial.decay.function,
                         spatial.data, distance[in.sample == 1],
